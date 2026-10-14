@@ -1,5 +1,7 @@
 project_id = "sams-v2"
 
+# This synthetic catalog is consumed only by the Supabase CLI's isolated test
+# stack (including GitHub Actions). Hosted `db push` applies migrations only.
 [db.seed]
 enabled = true
 sql_paths = ["./seed.sql"]
@@ -12,5 +14,6 @@ additional_redirect_urls = ["http://localhost:3000/auth/callback"]
 
 [auth.email]
 # This enables the email/password provider; the global auth setting above still
-# blocks public account creation. Admin-provisioned demo users can sign in.
+# blocks public account creation. Test users are created only inside the isolated
+# test stack; hosted projects provision users from the Auth dashboard.
 enable_signup = true

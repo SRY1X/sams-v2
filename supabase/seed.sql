@@ -1,13 +1,13 @@
--- Synthetic local demonstration catalog. Never put real people or institutional
--- records in this file. Demo accounts are created by the loopback-only script.
+-- Synthetic catalog fixture for isolated database/RLS tests and optional local
+-- schema testing. Hosted `supabase db push` does not apply this file. Never add
+-- real people, credentials, or institution records here.
 insert into public.institutions(id,name,slug,timezone)
-values ('00000000-0000-4000-8000-000000000001','Open-Source University','open-source-university','Asia/Kolkata')
+values ('00000000-0000-4000-8000-000000000001','SAMS Test Institution','sams-test','UTC')
 on conflict (id) do nothing;
 
--- Keep the local synthetic institution recognizable when upgrading an older
--- local database that already had the original placeholder row.
+-- Keep the isolated test institution stable if an older test database is reset.
 update public.institutions
-set name='Open-Source University', slug='open-source-university', timezone='Asia/Kolkata'
+set name='SAMS Test Institution', slug='sams-test', timezone='UTC'
 where id='00000000-0000-4000-8000-000000000001';
 
 insert into public.institution_settings(institution_id)
