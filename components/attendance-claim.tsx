@@ -7,11 +7,13 @@ import { Brand } from "@/components/brand";
 let latchedToken = "";
 let activeMounts = 0;
 
+/** Subscribes to URL hash changes and returns a function that removes the listener. */
 function subscribeToHash(callback: () => void) {
   window.addEventListener("hashchange", callback);
   return () => window.removeEventListener("hashchange", callback);
 }
 
+/** Reads and retains a nonempty hash token, reusing it after the hash is cleared. */
 function readTokenFromHash() {
   const fromHash =
     new URLSearchParams(window.location.hash.slice(1)).get("token") ?? "";
@@ -21,10 +23,12 @@ function readTokenFromHash() {
   return latchedToken;
 }
 
+/** Returns an empty server snapshot because the URL hash is only available in the browser. */
 function getServerToken() {
   return "";
 }
 
+/** Submits the QR token, retains it across immediate remounts, and displays the claim status. */
 export function AttendanceClaim() {
   const token = useSyncExternalStore(
     subscribeToHash,
