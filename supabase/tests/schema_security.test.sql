@@ -1,12 +1,27 @@
 begin;
-select plan(18);
+select plan(29);
 
 select is((select count(*)::integer from pg_catalog.pg_class c join pg_catalog.pg_namespace n on n.oid=c.relnamespace where n.nspname='public' and c.relkind='r' and not c.relrowsecurity),0,'every public table enables RLS');
 select ok(not has_table_privilege('anon','public.institution_memberships','select'),'anonymous role cannot select memberships');
 select ok(not has_function_privilege('anon','public.record_attendance(uuid)','execute'),'anonymous role cannot submit attendance');
 select ok(has_function_privilege('authenticated','public.record_attendance(uuid)','execute'),'authenticated role can call the guarded attendance RPC');
+select ok(not has_function_privilege('authenticated','private.touch_updated_at()','execute'),'internal trigger helpers are not directly executable by clients');
+select ok(has_function_privilege('authenticated','private.record_attendance(uuid)','execute'),'authenticated role can invoke only the guarded internal attendance helper');
 select ok(not has_table_privilege('authenticated','public.attendance_records','insert'),'attendance records cannot be inserted directly by clients');
 select ok(exists(select 1 from pg_catalog.pg_indexes where schemaname='public' and indexname='attendance_one_open_session_per_section'),'one-open-session constraint index exists');
+select ok(not has_table_privilege('authenticated','public.institution_memberships','update'),'membership updates are not granted table-wide');
+select ok(not has_column_privilege('authenticated','public.institution_memberships','role','update'),'clients cannot update membership roles');
+select ok(has_column_privilege('authenticated','public.institution_memberships','status','update'),'the status column has its narrow update grant');
+
+create table public.default_privilege_probe(id integer primary key);
+alter table public.default_privilege_probe enable row level security;
+create function public.default_privilege_probe() returns integer language sql as $$ select 1 $$;
+select ok(not has_table_privilege('anon','public.default_privilege_probe','select'),'new tables are not granted to anon by default');
+select ok(not has_table_privilege('authenticated','public.default_privilege_probe','select'),'new tables are not granted to authenticated by default');
+select ok(has_table_privilege('service_role','public.default_privilege_probe','select'),'service_role retains trusted server access by default');
+select ok(not has_function_privilege('anon','public.default_privilege_probe()','execute'),'new functions are not executable by anon by default');
+select ok(not has_function_privilege('authenticated','public.default_privilege_probe()','execute'),'new functions are not executable by authenticated by default');
+select ok(has_function_privilege('service_role','public.default_privilege_probe()','execute'),'service_role retains trusted function access by default');
 
 insert into auth.users(id,email) values
   ('10000000-0000-4000-8000-000000000001','student-one@example.test'),

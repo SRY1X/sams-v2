@@ -1,3 +1,18 @@
+-- Project-level defaults can grant broad Data API privileges to anon and
+-- authenticated. Keep new public objects closed by default; grant only what
+-- the application needs below. Preserve service_role defaults for trusted
+-- server-side operations.
+alter default privileges for role postgres in schema public
+  revoke all on tables from anon, authenticated;
+alter default privileges for role postgres in schema public
+  revoke all on functions from public, anon, authenticated;
+-- PostgreSQL grants EXECUTE on new functions to PUBLIC globally by default;
+-- that built-in grant cannot be revoked by a per-schema default ACL.
+alter default privileges for role postgres
+  revoke execute on functions from public;
+alter default privileges for role postgres in schema public
+  revoke all on sequences from anon, authenticated;
+
 create schema if not exists private;
 revoke all on schema private from public, anon;
 grant usage on schema private to authenticated;
@@ -367,6 +382,7 @@ returns boolean language sql security invoker set search_path = '' as $$
   select private.can_manage_session(p_session_id);
 $$;
 
+revoke all on all functions in schema private from public, anon, authenticated;
 revoke all on function private.has_membership(uuid,text[]) from public,anon;
 revoke all on function private.is_section_faculty(uuid) from public,anon;
 revoke all on function private.is_enrolled(uuid) from public,anon;
@@ -383,6 +399,7 @@ grant execute on function private.can_manage_session(uuid) to authenticated;
 grant execute on function private.create_attendance_session(uuid) to authenticated;
 grant execute on function private.close_attendance_session(uuid) to authenticated;
 grant execute on function private.record_attendance(uuid) to authenticated;
+revoke all on all functions in schema public from public, anon, authenticated;
 revoke all on function public.create_attendance_session(uuid) from public,anon;
 revoke all on function public.close_attendance_session(uuid) from public,anon;
 revoke all on function public.record_attendance(uuid) from public,anon;
@@ -406,10 +423,12 @@ alter table public.attendance_sessions enable row level security;
 alter table public.attendance_records enable row level security;
 alter table public.audit_events enable row level security;
 
+revoke all on all tables in schema public from anon, authenticated;
+-- Regrant the minimum table and column privileges after clearing project defaults.
 grant select on public.institutions,public.institution_settings,public.profiles,public.institution_memberships,
   public.departments,public.academic_terms,public.courses,public.course_sections,public.section_faculty,
   public.enrollments,public.attendance_sessions,public.attendance_records,public.audit_events to authenticated;
-revoke all on all tables in schema public from anon;
+revoke all on all sequences in schema public from anon, authenticated;
 grant update (display_name) on public.profiles to authenticated;
 grant update (status) on public.institution_memberships to authenticated;
 grant insert,update,delete on public.institution_settings,public.departments,public.academic_terms,public.courses,
