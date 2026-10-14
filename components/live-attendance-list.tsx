@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { formatInstitutionDateTime } from "@/lib/config/format";
+import { LIVE_ATTENDANCE_REFRESH_MS } from "@/lib/attendance/constants";
 
 type RecordRow = {
   id: string;
@@ -20,7 +21,11 @@ export function LiveAttendanceList({
   const [unavailable, setUnavailable] = useState(false);
   useEffect(() => {
     let active = true;
+    let timer = 0;
+    let fetching = false;
     async function refresh() {
+      if (!active || fetching || document.hidden) return;
+      fetching = true;
       try {
         const response = await fetch(
           `/api/attendance/sessions/${sessionId}/records`,
@@ -34,13 +39,28 @@ export function LiveAttendanceList({
         }
       } catch {
         if (active) setUnavailable(true);
+      } finally {
+        fetching = false;
+        if (active && !document.hidden) {
+          timer = window.setTimeout(
+            () => void refresh(),
+            LIVE_ATTENDANCE_REFRESH_MS,
+          );
+        }
+      }
+    }
+    function refreshWhenVisible() {
+      if (document.visibilityState === "visible") {
+        window.clearTimeout(timer);
+        void refresh();
       }
     }
     void refresh();
-    const timer = window.setInterval(() => void refresh(), 8000);
+    document.addEventListener("visibilitychange", refreshWhenVisible);
     return () => {
       active = false;
-      window.clearInterval(timer);
+      window.clearTimeout(timer);
+      document.removeEventListener("visibilitychange", refreshWhenVisible);
     };
   }, [sessionId]);
   return (
@@ -49,7 +69,7 @@ export function LiveAttendanceList({
         <div>
           <p className="text-xs font-bold">Live check-ins</p>
           <p className="mt-1 text-[10px] text-[#a1a1a1]">
-            Refreshes every 8 seconds. Only this section is shown.
+            Updates every 2 seconds while this page is open.
           </p>
         </div>
         <span className="badge">{records.length} present</span>

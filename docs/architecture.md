@@ -8,6 +8,7 @@ Browser
 Next.js server layer (Server Components, Actions, Route Handlers)
   ├─ Role-scoped queries through the user's Supabase JWT
   ├─ HMAC QR issue/validation (signing secret stays server-side)
+  ├─ Narrow, typed attendance context and roster RPCs (one database round trip per refresh)
   └─ Admin invitation adapter (service key isolated and optional)
        ↓ Row Level Security + narrow transaction functions
 Supabase Auth and PostgreSQL

@@ -27,7 +27,8 @@ This guide deploys the Next.js app to Vercel and connects it to one institution'
 
 1. Import `SRY1X/sams-v2` into Vercel and select `main` as the production branch.
 2. Confirm the project uses the Next.js framework, `npm ci` for installation, and `npm run build` for builds.
-3. Add environment variables in the encrypted Vercel settings:
+3. Keep Vercel Functions close to the Supabase database. This repository targets Mumbai (`bom1`) to match the initial Supabase project region (`ap-south-1`). If you deploy another institution's Supabase project elsewhere, update `vercel.json` to the nearest supported Vercel region and verify latency from the institution's network.
+4. Add environment variables in the encrypted Vercel settings:
 
    | Variable                               | Preview / staging                                          | Production                                |
    | -------------------------------------- | ---------------------------------------------------------- | ----------------------------------------- |
@@ -39,14 +40,14 @@ This guide deploys the Next.js app to Vercel and connects it to one institution'
 
    Manual Auth account creation does not require the service-role key. If you enable invitation support, keep it server-only and never use it for ordinary user requests.
 
-4. Generate a separate token-signing key for each environment:
+5. Generate a separate token-signing key for each environment:
 
    ```sh
    node -e "console.log(require('node:crypto').randomBytes(48).toString('base64url'))"
    ```
 
-5. Set Supabase Auth Site URL and redirect allow-list to match that deployment. If Preview callbacks are used, allow the Vercel preview URL pattern for the branch. Keep Preview on its own staging project so preview links never access production data.
-6. Deploy and verify login, role routing, faculty section management, student QR scanning on HTTPS, attendance history, and RLS denials using synthetic users.
+6. Set Supabase Auth Site URL and redirect allow-list to match that deployment. If Preview callbacks are used, allow the Vercel preview URL pattern for the branch. Keep Preview on its own staging project so preview links never access production data.
+7. Deploy and verify login, role routing, faculty section management, student QR scanning on HTTPS, attendance history, and RLS denials using synthetic users.
 
 ## Automated checks and migrations
 

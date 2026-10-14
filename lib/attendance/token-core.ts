@@ -1,4 +1,8 @@
 import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
+import {
+  ATTENDANCE_TOKEN_CLOCK_SKEW_SECONDS,
+  DEFAULT_QR_TOKEN_TTL_SECONDS,
+} from "./constants";
 
 type Claims = { v: 1; sid: string; iat: number; exp: number; nonce: string };
 function signature(value: string, secret: string) {
@@ -8,7 +12,7 @@ function signature(value: string, secret: string) {
 export function issueAttendanceToken(
   sessionId: string,
   secret: string,
-  ttlSeconds = 40,
+  ttlSeconds = DEFAULT_QR_TOKEN_TTL_SECONDS,
   now = Date.now(),
 ) {
   const issuedAt = Math.floor(now / 1000);
@@ -27,7 +31,7 @@ export function verifyAttendanceToken(
   token: string,
   secret: string,
   now = Date.now(),
-  skewSeconds = 5,
+  skewSeconds = ATTENDANCE_TOKEN_CLOCK_SKEW_SECONDS,
 ) {
   if (token.length > 1500 || token.length < 20) return null;
   const [body, supplied, extra] = token.split(".");

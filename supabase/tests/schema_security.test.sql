@@ -1,5 +1,5 @@
 begin;
-select plan(31);
+select plan(41);
 
 select is((select count(*)::integer from pg_catalog.pg_class c join pg_catalog.pg_namespace n on n.oid=c.relnamespace where n.nspname='public' and c.relkind='r' and not c.relrowsecurity),0,'every public table enables RLS');
 select ok(not has_table_privilege('anon','public.institution_memberships','select'),'anonymous role cannot select memberships');
@@ -7,6 +7,10 @@ select ok(not has_function_privilege('anon','public.record_attendance(uuid)','ex
 select ok(has_function_privilege('authenticated','public.record_attendance(uuid)','execute'),'authenticated role can call the guarded attendance RPC');
 select ok(not has_function_privilege('authenticated','private.touch_updated_at()','execute'),'internal trigger helpers are not directly executable by clients');
 select ok(has_function_privilege('authenticated','private.record_attendance(uuid)','execute'),'authenticated role can invoke only the guarded internal attendance helper');
+select ok(not has_function_privilege('anon','public.get_attendance_qr_context(uuid)','execute'),'anonymous role cannot read attendance QR context');
+select ok(has_function_privilege('authenticated','public.get_attendance_qr_context(uuid)','execute'),'authenticated role can request guarded attendance QR context');
+select ok(not has_function_privilege('anon','public.get_attendance_session_snapshot(uuid)','execute'),'anonymous role cannot read attendance snapshots');
+select ok(has_function_privilege('authenticated','public.get_attendance_session_snapshot(uuid)','execute'),'authenticated role can request guarded attendance snapshots');
 select ok(not has_table_privilege('authenticated','public.attendance_records','insert'),'attendance records cannot be inserted directly by clients');
 select ok(exists(select 1 from pg_catalog.pg_indexes where schemaname='public' and indexname='attendance_one_open_session_per_section'),'one-open-session constraint index exists');
 select ok(not has_table_privilege('authenticated','public.institution_memberships','update'),'membership updates are not granted table-wide');
@@ -78,6 +82,8 @@ select is((select count(*)::integer from public.institution_memberships),1,'stud
 select is((select count(*)::integer from public.course_sections),1,'enrolled student sees the enrolled section');
 select is((select count(*)::integer from public.attendance_records),1,'student sees their own attendance record');
 select is((select count(*)::integer from public.profiles where id='10000000-0000-4000-8000-000000000002'),0,'student cannot read another student profile');
+select is((select count(*)::integer from public.get_attendance_qr_context('00000000-0000-4000-8000-000000000070')),0,'student cannot obtain a faculty QR-signing context');
+select is((select count(*)::integer from public.get_attendance_session_snapshot('00000000-0000-4000-8000-000000000070')),0,'student cannot obtain a faculty attendance snapshot');
 
 select set_config('request.jwt.claim.sub','10000000-0000-4000-8000-000000000002',true);
 select is((select count(*)::integer from public.attendance_records),0,'unenrolled student cannot see another student attendance');
@@ -86,6 +92,10 @@ select throws_ok($$select public.record_attendance('00000000-0000-4000-8000-0000
 select set_config('request.jwt.claim.sub','10000000-0000-4000-8000-000000000003',true);
 select is((select count(*)::integer from public.attendance_records where session_id='00000000-0000-4000-8000-000000000070'),1,'assigned faculty can see section attendance for the test session');
 select is((select count(*)::integer from public.profiles where id='10000000-0000-4000-8000-000000000001'),1,'assigned faculty can see an enrolled student display name');
+select is((select count(*)::integer from public.get_attendance_qr_context('00000000-0000-4000-8000-000000000070')),1,'assigned faculty can obtain QR context for their session');
+select is((select qr_rotation_seconds from public.get_attendance_qr_context('00000000-0000-4000-8000-000000000070')),10,'institution default QR rotation is ten seconds');
+select is((select qr_token_ttl_seconds from public.get_attendance_qr_context('00000000-0000-4000-8000-000000000070')),10,'institution default QR token lifetime is ten seconds');
+select is((select jsonb_array_length(records)::integer from public.get_attendance_session_snapshot('00000000-0000-4000-8000-000000000070')),1,'assigned faculty gets the compact attendance snapshot');
 
 select set_config('request.jwt.claim.sub','10000000-0000-4000-8000-000000000004',true);
 select is((select count(*)::integer from public.institution_memberships where user_id in ('10000000-0000-4000-8000-000000000001','10000000-0000-4000-8000-000000000002','10000000-0000-4000-8000-000000000003','10000000-0000-4000-8000-000000000004')),4,'admin can read fixture institution memberships');
