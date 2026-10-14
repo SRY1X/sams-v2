@@ -2,6 +2,8 @@
 
 SAMS handles academic identity and attendance records. Please report suspected vulnerabilities privately; do not publish exploit details, student data, credentials, or QR tokens in a public issue.
 
+Before making the repository public, maintainers must enable GitHub private vulnerability reporting and provide a monitored private contact route in the repository security settings. If private reporting is unavailable, publish a dedicated security contact before inviting outside users; do not direct sensitive reports to public issues.
+
 Use GitHub’s **Report a vulnerability** option in the repository’s Security tab when private vulnerability reporting is enabled. If it is unavailable, use the private maintainer contact published in the repository’s GitHub security settings. Maintainers should enable private reporting before the first public release and publish a monitored contact route.
 
 Include the affected version/commit, impact, reproduction steps using synthetic data, and suggested mitigation if known. Reporters should allow maintainers reasonable time to investigate and prepare a fix before public disclosure. We aim to acknowledge reports within five business days and provide status updates while investigating.

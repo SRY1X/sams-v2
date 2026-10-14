@@ -28,16 +28,16 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
-    "@types/node": "^20",
+    "@types/node": "^24.19.2",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "eslint": "^9",
+    "eslint": "^9.39.5",
     "eslint-config-next": "16.3.8",
     "prettier": "3.9.9",
     "supabase": "^2.120.0",
     "tailwindcss": "^4",
     "typescript": "^5",
-    "vitest": "^3.2.7"
+    "vitest": "^5.0.4"
   },
   "packageManager": "npm@12.2.0",
   "allowScripts": {

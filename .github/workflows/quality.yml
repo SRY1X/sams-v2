@@ -4,6 +4,7 @@ on:
   pull_request:
   push:
     branches: [main]
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -11,13 +12,23 @@ permissions:
 jobs:
   app:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
+    # Build-time placeholders only. The job receives no project credentials and
+    # these values must never be copied into a deployment environment.
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: https://ci-placeholder.invalid
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ci-placeholder-not-a-real-key
+      ATTENDANCE_TOKEN_SECRET: ci-only-placeholder-signing-key-not-for-deployments-0000000000000000
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          node-version: 24
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24.21.0
           cache: npm
       - run: npm ci
+      - run: npm audit --omit=dev --audit-level=high
       - run: npm run format:check
       - run: npm run lint
       - run: npm run typecheck
@@ -26,11 +37,14 @@ jobs:
 
   database:
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          node-version: 24
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24.21.0
           cache: npm
       - run: npm ci
       - run: npm exec -- supabase start

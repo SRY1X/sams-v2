@@ -20,6 +20,10 @@ Confirm the faculty account is active and assigned to the selected section, its 
 
 Use the currently displayed code, keep the clock accurate, confirm the session remains open, and scan again. Confirm HTTPS in production, that the attendance secret is present in the server environment, and that the browser can open the deployed site.
 
+## Camera permission is unavailable on a phone
+
+Browser camera APIs require a secure context. `localhost` on the same device is secure, but a phone opening a plain-HTTP computer LAN address is not. Use an HTTPS deployment/preview with a separate staging Supabase project for mobile camera checks; a production database must not be used for previews.
+
 ## Local database does not start
 
 Ensure Docker is running and the Supabase CLI is installed, then run `supabase status` and `supabase db reset`. Read the CLI output for port conflicts or image-download failures. Avoid linking local work to the production project.

@@ -8,7 +8,9 @@
 - [ ] `npm run lint`
 - [ ] `npm run typecheck`
 - [ ] `npm run test`
-- [ ] `supabase test db` (when database behavior is affected)
+- [ ] `npm audit --omit=dev --audit-level=high`
+- [ ] `npm exec -- supabase db lint --local` (when database behavior is affected)
+- [ ] `npm exec -- supabase test db` (when database behavior is affected)
 - [ ] `npm run build`
 
 ## Database, authorization, and privacy

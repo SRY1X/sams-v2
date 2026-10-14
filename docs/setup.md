@@ -10,7 +10,7 @@
 
 1. Clone the repository, then run `npm ci`.
 2. Run `npm exec -- supabase start`. The local stack applies migrations and the synthetic academic catalog seed. No user accounts or personal data are seeded.
-3. Create `.env.local` from `.env.example`. Use the local API URL and publishable key shown by `npm exec -- supabase status`. Create an HMAC key with `openssl rand -base64 48`.
+3. Create `.env.local` from `.env.example`. On Windows PowerShell run `Copy-Item .env.example .env.local`; on macOS/Linux run `cp .env.example .env.local`. Use only the local API URL and publishable key from `npm exec -- supabase status` (the output also contains local secret keys; do not share it). Generate a local HMAC key with `node -e "console.log(require('node:crypto').randomBytes(48).toString('base64url'))"`.
 4. Open local Supabase Studio and create one Auth user. The auth trigger creates the corresponding profile.
 5. In the local SQL editor, run the following statement using the new Auth user ID from Studio:
 
@@ -21,7 +21,7 @@
 
    This is a trusted-owner bootstrap step. Do not expose an equivalent self-service admin operation. For a hosted institution, run the same operation only in its intended project and under the project owner’s control.
 
-6. To enable admin invitations locally, copy the local service-role key from `supabase status` into `.env.local`. The app uses it only after verifying the signed-in administrator in a server action.
+6. To enable admin invitations locally, you may copy the local service-role key from the local `supabase status` output into `.env.local`. It bypasses RLS; keep it server-only, never use a production key for local work, and never commit or share it. The app uses it only after verifying the signed-in administrator in a server action.
 7. Run `npm run dev`, open `http://localhost:3000`, sign in, create academic sections, invite users, then assign/enroll them.
 
 ## Hosted Supabase setup

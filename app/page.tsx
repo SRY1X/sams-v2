@@ -55,7 +55,10 @@ export default async function Home() {
         </div>
         <div className="relative mx-auto w-full max-w-[510px]">
           <div className="lattice-art" aria-hidden="true" />
-          <div className="absolute -inset-12 rounded-full bg-[#171717] blur-3xl" aria-hidden="true" />
+          <div
+            className="absolute -inset-12 rounded-full bg-[#171717] blur-3xl"
+            aria-hidden="true"
+          />
           <div className="surface relative rotate-[1deg] overflow-hidden p-5 sm:p-7">
             <div className="flex items-center justify-between border-b border-[#262626] pb-4">
               <div>

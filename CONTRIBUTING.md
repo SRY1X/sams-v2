@@ -8,7 +8,7 @@ Contributions from students, educators, maintainers, and first-time open-source 
 2. Create a branch such as `feat/section-enrollment` or `fix/qr-expiry-copy`.
 3. Keep changes focused. Do not include real student/faculty data, credentials, institutional exports, or proprietary/unlicensed assets.
 4. Add or update documentation and tests for behavior changes. RLS/schema changes need success and denial cases.
-5. Run `npm run format:check`, `npm run lint`, `npm run typecheck`, `npm run test`, `npm exec -- supabase db lint --local`, `npm exec -- supabase test db`, and `npm run build`.
+5. Run `npm run format:check`, `npm run lint`, `npm run typecheck`, `npm run test`, `npm audit --omit=dev --audit-level=high`, `npm exec -- supabase db lint --local`, `npm exec -- supabase test db`, and `npm run build`.
 6. Open a pull request using the template. Explain user impact, verification, database/auth/security impact, and any migration or configuration changes.
 
 ## Conventions

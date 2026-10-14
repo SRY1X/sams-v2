@@ -21,6 +21,8 @@ npm exec -- supabase db lint --local
 
 The CLI manages the local stack and requires a Docker-compatible runtime. Do not link a local project to production for routine development. See [Supabase local development](https://supabase.com/docs/guides/local-development) for installation and platform-specific details.
 
+For mobile camera checks, an HTTP LAN address such as `http://192.168.x.x:3000` is not a secure browser context. Use a same-device `localhost` session for local camera development or an HTTPS preview backed by a separate staging Supabase project. Do not expose a production database to a public preview.
+
 ## Development conventions
 
 - Prefer Server Components and server-side Supabase access; add client components only for browser interaction such as QR refresh.
