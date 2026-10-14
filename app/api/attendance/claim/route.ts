@@ -6,10 +6,12 @@ import { verifyAttendanceToken } from "@/lib/attendance/token";
 
 const bodySchema = z.object({ token: z.string().min(20).max(1500) });
 
+/** Records attendance for a signed QR token using the authenticated user’s database permissions. */
 export async function POST(request: NextRequest) {
   const requestStartedAt = performance.now();
   let authDuration = 0;
   let databaseDuration = 0;
+  /** Builds a private, uncached JSON response with authentication, database, and total timings. */
   const respond = (body: object, status: number) =>
     NextResponse.json(body, {
       status,

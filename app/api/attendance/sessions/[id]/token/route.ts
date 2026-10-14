@@ -10,6 +10,7 @@ import {
 
 const idSchema = z.uuid();
 
+/** Issues a rotating QR claim URL for an active session the authenticated user may manage. */
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },

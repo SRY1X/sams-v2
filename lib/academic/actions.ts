@@ -144,6 +144,10 @@ export async function setMembershipStatus(form: FormData) {
   finishAdmin(error ? "save-failed" : "saved");
 }
 
+/**
+ * Requires an institution admin, invites a student or faculty member, and creates their membership.
+ * Deletes the invited Auth user if membership creation fails, then redirects with the outcome.
+ */
 export async function inviteMember(form: FormData) {
   const member = await requireMembership("admin");
   const parsed = z

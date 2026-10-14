@@ -5,6 +5,7 @@ import { signIn, requestPasswordReset } from "@/lib/auth/actions";
 import { getIdentity } from "@/lib/auth/session";
 import { safeInternalPath } from "@/lib/auth/safe-redirect";
 
+/** Renders sign-in and password recovery forms, or redirects an authenticated user to the dashboard. */
 export default async function LoginPage({
   searchParams,
 }: {

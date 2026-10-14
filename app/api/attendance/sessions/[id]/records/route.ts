@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
 import { getIdentity } from "@/lib/auth/session";
 
+/** Returns a session roster snapshot when the database authorizes the authenticated user. */
 export async function GET(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> },

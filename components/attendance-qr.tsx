@@ -8,6 +8,7 @@ type TokenResult = { url: string; expiresAt: number; rotateAfterMs?: number };
 const EXPIRED_QR_RETRY_MS = 2_500;
 const QR_EXPIRY_REFRESH_BUFFER_MS = 500;
 
+/** Displays a session QR code and countdown, refreshing tokens while the page is visible. */
 export function AttendanceQr({ sessionId }: { sessionId: string }) {
   const [token, setToken] = useState<TokenResult | null>(null);
   const [error, setError] = useState(false);
@@ -18,6 +19,7 @@ export function AttendanceQr({ sessionId }: { sessionId: string }) {
     let alive = true;
     let refreshTimer = 0;
     let refreshing = false;
+    /** Fetches one token at a time and schedules rotation before expiry or a retry after failure. */
     async function refresh() {
       if (!alive || refreshing || document.visibilityState === "hidden") return;
       refreshing = true;
@@ -64,6 +66,7 @@ export function AttendanceQr({ sessionId }: { sessionId: string }) {
         refreshing = false;
       }
     }
+    /** Replaces the pending refresh timer with an immediate fetch when the page becomes visible. */
     function refreshWhenVisible() {
       if (document.visibilityState === "visible") {
         window.clearTimeout(refreshTimer);

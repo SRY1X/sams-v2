@@ -3,6 +3,7 @@ import { safeInternalPath } from "@/lib/auth/safe-redirect";
 import { getSiteOrigin } from "@/lib/config/server-env";
 import { createClient } from "@/lib/supabase/server";
 
+/** Exchanges an Auth code when present, then redirects using the validated site origin and next path. */
 export async function GET(request: NextRequest) {
   const url = request.nextUrl;
   const code = url.searchParams.get("code");

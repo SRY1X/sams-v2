@@ -1,5 +1,9 @@
 const redirectBase = "https://sams-v2.invalid";
 
+/**
+ * Parses a root-relative destination against the app base and returns its normalized path, query, and hash.
+ * Returns the caller-provided fallback (which must be a trusted app path) for rejected input.
+ */
 export function safeInternalPath(
   candidate: string | null | undefined,
   fallback = "/dashboard",

@@ -10,6 +10,7 @@ type RecordRow = {
   recordedAt: string;
   status: string;
 };
+/** Displays session check-ins with institution-local timestamps and polling while the page is visible. */
 export function LiveAttendanceList({
   sessionId,
   timezone,
@@ -23,6 +24,7 @@ export function LiveAttendanceList({
     let active = true;
     let timer = 0;
     let fetching = false;
+    /** Fetches the latest roster without overlapping requests and schedules the next visible-page poll. */
     async function refresh() {
       if (!active || fetching || document.hidden) return;
       fetching = true;
@@ -49,6 +51,7 @@ export function LiveAttendanceList({
         }
       }
     }
+    /** Clears the pending poll and requests current check-ins when the page becomes visible. */
     function refreshWhenVisible() {
       if (document.visibilityState === "visible") {
         window.clearTimeout(timer);

@@ -12,6 +12,7 @@ const credentialsSchema = z.object({
   password: z.string().min(1).max(200),
 });
 
+/** Validates credentials, signs in through Supabase, and redirects to the validated next path or an error. */
 export async function signIn(formData: FormData) {
   const parsed = credentialsSchema.safeParse({
     email: String(formData.get("email") ?? "")
@@ -28,6 +29,7 @@ export async function signIn(formData: FormData) {
   redirect(safeInternalPath(next));
 }
 
+/** Requests a recovery email using the validated site origin and redirects to a generic confirmation. */
 export async function requestPasswordReset(formData: FormData) {
   const email = z.email().safeParse(
     String(formData.get("email") ?? "")

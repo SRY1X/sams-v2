@@ -34,6 +34,10 @@ export function getServerEnv() {
   return schema.parse(process.env);
 }
 
+/**
+ * Returns a validated configured site origin, falling back to the Vercel deployment host when available.
+ * Throws when the selected origin is invalid or neither source is configured.
+ */
 export function getSiteOrigin() {
   const configuredOrigin = process.env.NEXT_PUBLIC_SITE_URL;
   if (configuredOrigin) return siteOriginSchema.parse(configuredOrigin);
