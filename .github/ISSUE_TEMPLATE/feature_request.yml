@@ -1,0 +1,24 @@
+name: Feature request
+description: Propose a focused improvement to SAMS V2.
+title: "feature: "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: User need
+      description: Which role has this problem and when does it occur?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed behavior
+      description: Describe a small, testable first version.
+    validations:
+      required: true
+  - type: textarea
+    id: impact
+    attributes:
+      label: Institution, privacy, or security impact
+      description: Note policy differences, data collected, and any authorization changes.

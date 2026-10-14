@@ -1,0 +1,13 @@
+# Environment configuration
+
+Copy `.env.example` to `.env.local`. Never commit `.env.local` or put secret values in a pull request, screenshot, log, issue, or seed file.
+
+| Variable                               | Required    | Exposure           | Purpose                                                                                                                                        |
+| -------------------------------------- | ----------- | ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| `NEXT_PUBLIC_SUPABASE_URL`             | Yes         | Browser and server | Supabase project URL. It is public connection metadata, not a credential.                                                                      |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Yes         | Browser and server | Supabase publishable key. RLS and Auth policies must protect data; this key is not a substitute for authorization.                             |
+| `ATTENDANCE_TOKEN_SECRET`              | Yes         | Server only        | HMAC signing key for short-lived QR tokens. Use a unique cryptographically random value for each environment and rotate if exposed.            |
+| `NEXT_PUBLIC_SITE_URL`                 | Recommended | Browser and server | Canonical origin for Auth invitation and recovery callback URLs. Add the matching callback URL to Supabase Auth redirect allow-list.           |
+| `SUPABASE_SERVICE_ROLE_KEY`            | Optional    | Server only        | Needed only by the admin invitation operation. It bypasses RLS. Never use it for ordinary app queries, expose it to client bundles, or log it. |
+
+Production and preview deployments must use separate Supabase projects/credentials where possible. Configure secrets in the hosting provider’s environment settings; never copy production credentials into local development. Restrict Auth redirect URLs to the deployment origins you control.

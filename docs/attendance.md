@@ -1,0 +1,15 @@
+# QR attendance lifecycle
+
+1. An authenticated faculty member selects an assigned course section and starts a session. PostgreSQL checks faculty/admin membership, the assignment, active term dates, configured maximum duration, and the one-open-session rule.
+2. A server-only HMAC signer emits a token with version, session UUID, issue/expiry timestamps, and random nonce. No identity or student data is included. The secret never reaches the browser.
+3. The faculty browser refreshes the QR using an authenticated no-store endpoint. The configured default rotates every 25 seconds; token validity defaults to 40 seconds. The session has a separate default two-hour maximum.
+4. A student scans the QR using a phone’s camera, opens the attendance claim page, and submits the token while signed in. The token is encoded in the URL fragment so it is not sent in the page request; client code removes it from the visible address bar before posting it. The app also sends `Referrer-Policy: no-referrer`.
+5. The server verifies token signature, maximum token lifetime, and a fixed five-second timestamp tolerance. PostgreSQL then independently verifies the signed-in user is an active student enrolled in the session section, the session is open and unexpired, and inserts one record under a unique constraint.
+6. Repeated submissions are idempotent. Unauthorized, expired, closed, malformed, and non-enrolled scans return generic safe messages. Faculty or admins close sessions; stale expired sessions are closed during the next creation attempt and cannot accept attendance after expiry.
+7. Session creation/closure, attendance insertion, and academic setup changes create audit events. QR tokens and emails are not written to application logs or audit metadata.
+
+The short token window limits stale screenshots but cannot establish proximity, stop real-time relays, or prevent a student sharing account credentials. Attendance is tied to the authenticated student account; institutions should explain the limitation and use non-invasive classroom procedures for suspected abuse. Never add location, biometric, or device fingerprint collection by default.
+
+## Current policy defaults
+
+`institution_settings.settings` defaults: rotation 25 seconds (allowed 10–120), token TTL 40 seconds (10–180), and maximum session 7,200 seconds (300–28,800). Token issue and claim responses are no-store. Database time determines whether a session is still valid. Policy updates must preserve these bounds and be audited.

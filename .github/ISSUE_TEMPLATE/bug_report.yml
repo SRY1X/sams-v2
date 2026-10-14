@@ -1,0 +1,33 @@
+name: Bug report
+description: Report a reproducible issue using synthetic data.
+title: "bug: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: "Never include credentials, attendance QR tokens, or real student/faculty data."
+  - type: textarea
+    id: summary
+    attributes:
+      label: What happened?
+      description: Include the expected and actual behavior.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      placeholder: Use synthetic/local records only.
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: SAMS version or commit
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Browser, operating system, and local/hosted setup. Do not paste secrets.
