@@ -39,7 +39,11 @@ export function getSiteOrigin() {
   if (configuredOrigin) return siteOriginSchema.parse(configuredOrigin);
 
   const deploymentHost = process.env.VERCEL_URL;
-  if (process.env.VERCEL && deploymentHost) {
+  if (
+    process.env.VERCEL &&
+    process.env.VERCEL_ENV === "preview" &&
+    deploymentHost
+  ) {
     return siteOriginSchema.parse(`https://${deploymentHost}`);
   }
 

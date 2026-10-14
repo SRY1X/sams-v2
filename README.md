@@ -130,8 +130,14 @@ You can run the Next.js application on your computer while connecting it to a **
 
 ```sh
 npm ci
-Copy-Item .env.example .env.local # PowerShell; on macOS/Linux use: cp .env.example .env.local
+cp .env.example .env.local
 npm run dev
+```
+
+For PowerShell, use this copy command:
+
+```powershell
+Copy-Item .env.example .env.local
 ```
 
 Fill `.env.local` with values from your own non-production Supabase project before starting the app. Do not use a production database for local development. See [hosted setup](docs/setup.md), [environment configuration](docs/environment.md), and [local app development](docs/local-development.md).
