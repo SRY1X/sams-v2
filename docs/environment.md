@@ -8,6 +8,7 @@ Copy `.env.example` to `.env.local`. Never commit `.env.local` or put secret val
 | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Yes         | Browser and server | Supabase publishable key. RLS and Auth policies must protect data; this key is not a substitute for authorization.                             |
 | `ATTENDANCE_TOKEN_SECRET`              | Yes         | Server only        | HMAC signing key for short-lived QR tokens. Use a unique cryptographically random value for each environment and rotate if exposed.            |
 | `NEXT_PUBLIC_SITE_URL`                 | Recommended | Browser and server | Canonical origin for Auth invitation and recovery callback URLs. Add the matching callback URL to Supabase Auth redirect allow-list.           |
+| `NEXT_ALLOWED_DEV_ORIGINS`              | Optional    | Development only  | Comma-separated hostnames (without scheme/port) allowed to request Next.js dev assets, e.g. the laptop's LAN IP when testing from a phone. It does not relax Server Actions' origin/CSRF checks. |
 | `SUPABASE_SERVICE_ROLE_KEY`            | Optional    | Server only        | Needed only by the admin invitation operation. It bypasses RLS. Never use it for ordinary app queries, expose it to client bundles, or log it. |
 
 Production and preview deployments must use separate Supabase projects/credentials where possible. Configure secrets in the hosting provider’s environment settings; never copy production credentials into local development. Restrict Auth redirect URLs to the deployment origins you control.

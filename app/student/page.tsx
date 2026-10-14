@@ -123,16 +123,22 @@ export default async function StudentDashboard() {
               Most recent attendance records
             </p>
           </div>
-          <div className="surface flex items-center gap-3 bg-[#142019] p-5">
+          <div className="surface flex flex-wrap items-center gap-3 bg-[#142019] p-5">
             <span className="grid size-10 place-items-center rounded-xl bg-[#171717] text-lg text-[#ff8833]">
               ⌗
             </span>
             <div>
               <p className="text-sm font-bold">Ready to check in?</p>
               <p className="mt-1 text-xs text-[#a1a1a1]">
-                Scan your instructor’s active QR code.
+                Open the scanner and scan your instructor’s active QR code.
               </p>
             </div>
+            <Link
+              className="button secondary w-full sm:w-auto"
+              href="/student/scan"
+            >
+              Scan attendance QR <span aria-hidden="true">→</span>
+            </Link>
           </div>
         </section>
         <div className="mt-9 grid gap-6 lg:grid-cols-[1.35fr_.85fr]">
