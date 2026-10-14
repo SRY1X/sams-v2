@@ -6,7 +6,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { requireMembership } from "@/lib/auth/session";
 import type { Database, Role } from "@/lib/database.types";
-import { getPublicEnv } from "@/lib/config/env";
+import { getServerEnv, getSiteOrigin } from "@/lib/config/server-env";
 
 const text = (form: FormData, key: string) =>
   String(form.get(key) ?? "").trim();
@@ -159,18 +159,28 @@ export async function inviteMember(form: FormData) {
     });
   if (!parsed.success) finishAdmin("invalid");
   const secret = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  const { supabaseUrl } = getPublicEnv();
-  if (!secret || !supabaseUrl) finishAdmin("invite-unavailable");
+  if (!secret) finishAdmin("invite-unavailable");
+  let serverEnv: ReturnType<typeof getServerEnv>;
+  let siteOrigin: string;
+  try {
+    serverEnv = getServerEnv();
+    siteOrigin = getSiteOrigin();
+  } catch {
+    finishAdmin("invite-unavailable");
+  }
 
   // This elevated client is isolated to the admin-checked invitation operation.
-  const adminClient = createSupabaseClient<Database>(supabaseUrl, secret, {
-    auth: { autoRefreshToken: false, persistSession: false },
-  });
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+  const adminClient = createSupabaseClient<Database>(
+    serverEnv.NEXT_PUBLIC_SUPABASE_URL,
+    secret,
+    {
+      auth: { autoRefreshToken: false, persistSession: false },
+    },
+  );
   const { data: invite, error: inviteError } =
     await adminClient.auth.admin.inviteUserByEmail(parsed.data.email, {
       data: { full_name: parsed.data.display_name },
-      redirectTo: `${siteUrl}/auth/callback`,
+      redirectTo: `${siteOrigin}/auth/callback`,
     });
   if (inviteError || !invite.user) finishAdmin("invite-failed");
   const role = parsed.data.role as Extract<Role, "student" | "faculty">;

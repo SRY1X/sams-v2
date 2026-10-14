@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { Brand } from "@/components/brand";
 import { signIn, requestPasswordReset } from "@/lib/auth/actions";
 import { getIdentity } from "@/lib/auth/session";
+import { safeInternalPath } from "@/lib/auth/safe-redirect";
 
 export default async function LoginPage({
   searchParams,
@@ -12,12 +13,9 @@ export default async function LoginPage({
   const identity = await getIdentity();
   if (identity) redirect("/dashboard");
   const query = await searchParams;
-  const next =
-    typeof query.next === "string" &&
-    query.next.startsWith("/") &&
-    !query.next.startsWith("//")
-      ? query.next
-      : "/dashboard";
+  const next = safeInternalPath(
+    typeof query.next === "string" ? query.next : null,
+  );
   const error = typeof query.error === "string" ? query.error : "";
   return (
     <main className="grid min-h-screen lg:grid-cols-[1fr_.9fr]">
@@ -82,7 +80,7 @@ export default async function LoginPage({
               {error === "credentials"
                 ? "We couldn’t sign you in with those details. Check them and try again."
                 : error === "configuration"
-                  ? "Sign-in is not configured yet. Follow the local setup guide."
+                  ? "Sign-in is not configured yet. Follow the deployment guide."
                   : "Enter a valid email and password."}
             </div>
           )}

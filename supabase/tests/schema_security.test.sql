@@ -1,5 +1,5 @@
 begin;
-select plan(29);
+select plan(31);
 
 select is((select count(*)::integer from pg_catalog.pg_class c join pg_catalog.pg_namespace n on n.oid=c.relnamespace where n.nspname='public' and c.relkind='r' and not c.relrowsecurity),0,'every public table enables RLS');
 select ok(not has_table_privilege('anon','public.institution_memberships','select'),'anonymous role cannot select memberships');
@@ -28,16 +28,41 @@ insert into auth.users(id,email) values
   ('10000000-0000-4000-8000-000000000002','student-two@example.test'),
   ('10000000-0000-4000-8000-000000000003','faculty@example.test'),
   ('10000000-0000-4000-8000-000000000004','admin@example.test'),
-  ('10000000-0000-4000-8000-000000000005','other-institution@example.test');
+  ('10000000-0000-4000-8000-000000000005','other-institution@example.test'),
+  ('10000000-0000-4000-8000-000000000006','timezone-admin@example.test');
 
 insert into public.institutions(id,name,slug,timezone)
-values ('00000000-0000-4000-8000-000000000002','Other Demo Institution','other-demo','UTC');
+values ('00000000-0000-4000-8000-000000000002','Other Demo Institution','other-demo','Etc/GMT+12');
 insert into public.institution_memberships(institution_id,user_id,role) values
   ('00000000-0000-4000-8000-000000000001','10000000-0000-4000-8000-000000000001','student'),
   ('00000000-0000-4000-8000-000000000001','10000000-0000-4000-8000-000000000002','student'),
   ('00000000-0000-4000-8000-000000000001','10000000-0000-4000-8000-000000000003','faculty'),
   ('00000000-0000-4000-8000-000000000001','10000000-0000-4000-8000-000000000004','admin'),
-  ('00000000-0000-4000-8000-000000000002','10000000-0000-4000-8000-000000000005','student');
+  ('00000000-0000-4000-8000-000000000002','10000000-0000-4000-8000-000000000005','student'),
+  ('00000000-0000-4000-8000-000000000002','10000000-0000-4000-8000-000000000006','admin');
+insert into public.academic_terms(id,institution_id,name,starts_on,ends_on)
+values (
+  '00000000-0000-4000-8000-000000000021',
+  '00000000-0000-4000-8000-000000000002',
+  'Timezone boundary term',
+  (now() at time zone 'Etc/GMT+12')::date - 1,
+  (now() at time zone 'Etc/GMT+12')::date
+);
+insert into public.courses(id,institution_id,code,title)
+values (
+  '00000000-0000-4000-8000-000000000031',
+  '00000000-0000-4000-8000-000000000002',
+  'TIME-101',
+  'Timezone boundary test'
+);
+insert into public.course_sections(id,institution_id,course_id,term_id,section_code)
+values (
+  '00000000-0000-4000-8000-000000000041',
+  '00000000-0000-4000-8000-000000000002',
+  '00000000-0000-4000-8000-000000000031',
+  '00000000-0000-4000-8000-000000000021',
+  'TZ'
+);
 insert into public.section_faculty(institution_id,section_id,faculty_user_id)
 values ('00000000-0000-4000-8000-000000000001','00000000-0000-4000-8000-000000000040','10000000-0000-4000-8000-000000000003');
 insert into public.enrollments(institution_id,section_id,student_user_id)
@@ -67,6 +92,19 @@ select is((select count(*)::integer from public.institution_memberships where us
 
 select set_config('request.jwt.claim.sub','10000000-0000-4000-8000-000000000005',true);
 select is((select count(*)::integer from public.course_sections),0,'other institution cannot read this institution section');
+
+set local time zone 'Pacific/Kiritimati';
+select set_config('request.jwt.claim.sub','10000000-0000-4000-8000-000000000006',true);
+select lives_ok(
+  $$select public.create_attendance_session('00000000-0000-4000-8000-000000000041')$$,
+  'session creation checks term dates in the institution timezone'
+);
+select is(
+  (select count(*)::integer from public.attendance_sessions
+   where section_id='00000000-0000-4000-8000-000000000041' and status='open'),
+  1,
+  'valid local term creates an attendance session across timezone boundaries'
+);
 
 reset role;
 select * from finish();

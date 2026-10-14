@@ -29,13 +29,13 @@ This guide deploys the Next.js app to Vercel and connects it to one institution'
 2. Confirm the project uses the Next.js framework, `npm ci` for installation, and `npm run build` for builds.
 3. Add environment variables in the encrypted Vercel settings:
 
-   | Variable                               | Preview / staging                     | Production                                |
-   | -------------------------------------- | ------------------------------------- | ----------------------------------------- |
-   | `NEXT_PUBLIC_SUPABASE_URL`             | Staging Supabase project URL          | Production Supabase project URL           |
-   | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Staging publishable key               | Production publishable key                |
-   | `ATTENDANCE_TOKEN_SECRET`              | Unique random secret                  | Different unique random secret            |
-   | `NEXT_PUBLIC_SITE_URL`                 | Exact HTTPS preview origin            | Canonical production HTTPS origin         |
-   | `SUPABASE_SERVICE_ROLE_KEY`            | Optional; only if testing invitations | Optional; only if invitations are enabled |
+   | Variable                               | Preview / staging                                          | Production                                |
+   | -------------------------------------- | ---------------------------------------------------------- | ----------------------------------------- |
+   | `NEXT_PUBLIC_SUPABASE_URL`             | Staging Supabase project URL                               | Production Supabase project URL           |
+   | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Staging publishable key                                    | Production publishable key                |
+   | `ATTENDANCE_TOKEN_SECRET`              | Unique random secret                                       | Different unique random secret            |
+   | `NEXT_PUBLIC_SITE_URL`                 | Optional; otherwise uses the generated Vercel HTTPS origin | Canonical production HTTPS origin         |
+   | `SUPABASE_SERVICE_ROLE_KEY`            | Optional; only if testing invitations                      | Optional; only if invitations are enabled |
 
    Manual Auth account creation does not require the service-role key. If you enable invitation support, keep it server-only and never use it for ordinary user requests.
 
@@ -45,7 +45,7 @@ This guide deploys the Next.js app to Vercel and connects it to one institution'
    node -e "console.log(require('node:crypto').randomBytes(48).toString('base64url'))"
    ```
 
-5. Set Supabase Auth Site URL and redirect allow-list to match that deployment. Keep Preview on its own staging project so preview links never access production data.
+5. Set Supabase Auth Site URL and redirect allow-list to match that deployment. If Preview callbacks are used, allow the Vercel preview URL pattern for the branch. Keep Preview on its own staging project so preview links never access production data.
 6. Deploy and verify login, role routing, faculty section management, student QR scanning on HTTPS, attendance history, and RLS denials using synthetic users.
 
 ## Automated checks and migrations
@@ -61,6 +61,7 @@ Vercel Git integration builds preview deployments for pull requests and producti
 - Test an eligible scan, expired token, duplicate scan, non-enrolled student, closed session, faculty assignment revocation, and network retry.
 - Use HTTPS on a mobile browser and synthetic accounts. Camera video is processed in the browser and must not be collected or logged.
 - Confirm public sign-up is disabled, Auth redirects are limited to domains you control, and no account can promote itself to admin.
+- Set a strong minimum password length (at least 12 characters). Enable leaked-password protection where the Supabase plan supports it; Supabase currently makes this setting available on Pro and above. If unavailable, document the limitation and require unique passwords before using real academic records. See [Supabase password security](https://supabase.com/docs/guides/auth/password-security).
 - Review logs for tokens, credentials, email addresses, names, and attendance contents.
 - Confirm an accountable operator can restore a backup and roll back an application deployment. For applied database migrations, use reviewed forward migrations instead of assuming a down migration is safe.
 
