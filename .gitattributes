@@ -1,0 +1,2 @@
+# Keep text files on LF so Windows and Unix formatting checks agree.
+* text=auto eol=lf

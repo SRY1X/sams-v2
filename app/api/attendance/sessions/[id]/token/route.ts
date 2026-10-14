@@ -1,17 +1,22 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
-import { getMembership } from "@/lib/auth/session";
+import { getIdentity } from "@/lib/auth/session";
 import { getServerEnv } from "@/lib/config/server-env";
 import { issueAttendanceToken } from "@/lib/attendance/token";
+import {
+  DEFAULT_QR_ROTATION_SECONDS,
+  DEFAULT_QR_TOKEN_TTL_SECONDS,
+} from "@/lib/attendance/constants";
 
 const idSchema = z.uuid();
 
+/** Issues a rotating QR claim URL for an active session the authenticated user may manage. */
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const membership = await getMembership();
-  if (!membership || !["faculty", "admin"].includes(membership.role)) {
+  const identity = await getIdentity();
+  if (!identity) {
     return NextResponse.json(
       { error: "not_available" },
       { status: 404, headers: { "Cache-Control": "no-store" } },
@@ -21,59 +26,35 @@ export async function GET(
   if (!idSchema.safeParse(id).success)
     return NextResponse.json({ error: "not_available" }, { status: 404 });
 
-  const { data: session } = await membership.supabase
-    .from("attendance_sessions")
-    .select("id,institution_id,section_id,status,expires_at")
-    .eq("id", id)
-    .maybeSingle();
-  if (
-    !session ||
-    session.institution_id !== membership.institution_id ||
-    session.status !== "open" ||
-    Date.parse(session.expires_at) <= Date.now()
-  ) {
-    return NextResponse.json(
-      { error: "not_available" },
-      { status: 404, headers: { "Cache-Control": "no-store" } },
-    );
-  }
-
-  const { data: allowed } = await membership.supabase.rpc(
-    "can_manage_attendance_session",
+  const { data: contexts, error } = await identity.supabase.rpc(
+    "get_attendance_qr_context",
     { p_session_id: id },
   );
-  if (!allowed)
+  const context = contexts?.[0];
+  if (error || !context || Date.parse(context.expires_at) <= Date.now())
     return NextResponse.json(
       { error: "not_available" },
       { status: 404, headers: { "Cache-Control": "no-store" } },
     );
 
   const { ATTENDANCE_TOKEN_SECRET } = getServerEnv();
-  const { data: settingsRow } = await membership.supabase
-    .from("institution_settings")
-    .select("settings")
-    .eq("institution_id", membership.institution_id)
-    .maybeSingle();
-  const settings = settingsRow?.settings as Record<string, unknown> | undefined;
-  const ttl =
-    typeof settings?.qr_token_ttl_seconds === "number"
-      ? settings.qr_token_ttl_seconds
-      : 40;
-  const rotation =
-    typeof settings?.qr_rotation_seconds === "number"
-      ? settings.qr_rotation_seconds
-      : 25;
-  const token = issueAttendanceToken(id, ATTENDANCE_TOKEN_SECRET, ttl);
+  const ttl = context.qr_token_ttl_seconds ?? DEFAULT_QR_TOKEN_TTL_SECONDS;
+  const rotation = context.qr_rotation_seconds ?? DEFAULT_QR_ROTATION_SECONDS;
+  const issuedAt = Date.now();
+  const token = issueAttendanceToken(
+    id,
+    ATTENDANCE_TOKEN_SECRET,
+    ttl,
+    issuedAt,
+  );
+  const tokenExpiresAt = (Math.floor(issuedAt / 1000) + ttl) * 1000;
   const claimUrl = new URL("/attendance/claim", request.nextUrl.origin);
   claimUrl.hash = new URLSearchParams({ token }).toString();
   return NextResponse.json(
     {
       url: claimUrl.toString(),
-      expiresAt: Math.min(
-        Date.now() + ttl * 1000,
-        Date.parse(session.expires_at),
-      ),
-      rotateAfterMs: Math.max(10, Math.min(rotation, 120)) * 1000,
+      expiresAt: Math.min(tokenExpiresAt, Date.parse(context.expires_at)),
+      rotateAfterMs: rotation * 1000,
     },
     {
       headers: { "Cache-Control": "no-store, private", Pragma: "no-cache" },

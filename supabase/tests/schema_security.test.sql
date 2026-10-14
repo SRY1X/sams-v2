@@ -1,5 +1,5 @@
 begin;
-select plan(29);
+select plan(45);
 
 select is((select count(*)::integer from pg_catalog.pg_class c join pg_catalog.pg_namespace n on n.oid=c.relnamespace where n.nspname='public' and c.relkind='r' and not c.relrowsecurity),0,'every public table enables RLS');
 select ok(not has_table_privilege('anon','public.institution_memberships','select'),'anonymous role cannot select memberships');
@@ -7,7 +7,12 @@ select ok(not has_function_privilege('anon','public.record_attendance(uuid)','ex
 select ok(has_function_privilege('authenticated','public.record_attendance(uuid)','execute'),'authenticated role can call the guarded attendance RPC');
 select ok(not has_function_privilege('authenticated','private.touch_updated_at()','execute'),'internal trigger helpers are not directly executable by clients');
 select ok(has_function_privilege('authenticated','private.record_attendance(uuid)','execute'),'authenticated role can invoke only the guarded internal attendance helper');
+select ok(not has_function_privilege('anon','public.get_attendance_qr_context(uuid)','execute'),'anonymous role cannot read attendance QR context');
+select ok(has_function_privilege('authenticated','public.get_attendance_qr_context(uuid)','execute'),'authenticated role can request guarded attendance QR context');
+select ok(not has_function_privilege('anon','public.get_attendance_session_snapshot(uuid)','execute'),'anonymous role cannot read attendance snapshots');
+select ok(has_function_privilege('authenticated','public.get_attendance_session_snapshot(uuid)','execute'),'authenticated role can request guarded attendance snapshots');
 select ok(not has_table_privilege('authenticated','public.attendance_records','insert'),'attendance records cannot be inserted directly by clients');
+select is((select count(*)::integer from pg_catalog.pg_policies where schemaname='public' and tablename in ('academic_terms','course_sections','courses','departments','enrollments','institution_settings','section_faculty') and cmd='SELECT' and roles @> array['authenticated'::name]),7,'academic admin write policies do not duplicate scoped read policies');
 select ok(exists(select 1 from pg_catalog.pg_indexes where schemaname='public' and indexname='attendance_one_open_session_per_section'),'one-open-session constraint index exists');
 select ok(not has_table_privilege('authenticated','public.institution_memberships','update'),'membership updates are not granted table-wide');
 select ok(not has_column_privilege('authenticated','public.institution_memberships','role','update'),'clients cannot update membership roles');
@@ -28,16 +33,41 @@ insert into auth.users(id,email) values
   ('10000000-0000-4000-8000-000000000002','student-two@example.test'),
   ('10000000-0000-4000-8000-000000000003','faculty@example.test'),
   ('10000000-0000-4000-8000-000000000004','admin@example.test'),
-  ('10000000-0000-4000-8000-000000000005','other-institution@example.test');
+  ('10000000-0000-4000-8000-000000000005','other-institution@example.test'),
+  ('10000000-0000-4000-8000-000000000006','timezone-admin@example.test');
 
 insert into public.institutions(id,name,slug,timezone)
-values ('00000000-0000-4000-8000-000000000002','Other Demo Institution','other-demo','UTC');
+values ('00000000-0000-4000-8000-000000000002','Other Demo Institution','other-demo','Etc/GMT+12');
 insert into public.institution_memberships(institution_id,user_id,role) values
   ('00000000-0000-4000-8000-000000000001','10000000-0000-4000-8000-000000000001','student'),
   ('00000000-0000-4000-8000-000000000001','10000000-0000-4000-8000-000000000002','student'),
   ('00000000-0000-4000-8000-000000000001','10000000-0000-4000-8000-000000000003','faculty'),
   ('00000000-0000-4000-8000-000000000001','10000000-0000-4000-8000-000000000004','admin'),
-  ('00000000-0000-4000-8000-000000000002','10000000-0000-4000-8000-000000000005','student');
+  ('00000000-0000-4000-8000-000000000002','10000000-0000-4000-8000-000000000005','student'),
+  ('00000000-0000-4000-8000-000000000002','10000000-0000-4000-8000-000000000006','admin');
+insert into public.academic_terms(id,institution_id,name,starts_on,ends_on)
+values (
+  '00000000-0000-4000-8000-000000000021',
+  '00000000-0000-4000-8000-000000000002',
+  'Timezone boundary term',
+  (now() at time zone 'Etc/GMT+12')::date - 1,
+  (now() at time zone 'Etc/GMT+12')::date
+);
+insert into public.courses(id,institution_id,code,title)
+values (
+  '00000000-0000-4000-8000-000000000031',
+  '00000000-0000-4000-8000-000000000002',
+  'TIME-101',
+  'Timezone boundary test'
+);
+insert into public.course_sections(id,institution_id,course_id,term_id,section_code)
+values (
+  '00000000-0000-4000-8000-000000000041',
+  '00000000-0000-4000-8000-000000000002',
+  '00000000-0000-4000-8000-000000000031',
+  '00000000-0000-4000-8000-000000000021',
+  'TZ'
+);
 insert into public.section_faculty(institution_id,section_id,faculty_user_id)
 values ('00000000-0000-4000-8000-000000000001','00000000-0000-4000-8000-000000000040','10000000-0000-4000-8000-000000000003');
 insert into public.enrollments(institution_id,section_id,student_user_id)
@@ -53,6 +83,8 @@ select is((select count(*)::integer from public.institution_memberships),1,'stud
 select is((select count(*)::integer from public.course_sections),1,'enrolled student sees the enrolled section');
 select is((select count(*)::integer from public.attendance_records),1,'student sees their own attendance record');
 select is((select count(*)::integer from public.profiles where id='10000000-0000-4000-8000-000000000002'),0,'student cannot read another student profile');
+select is((select count(*)::integer from public.get_attendance_qr_context('00000000-0000-4000-8000-000000000070')),0,'student cannot obtain a faculty QR-signing context');
+select is((select count(*)::integer from public.get_attendance_session_snapshot('00000000-0000-4000-8000-000000000070')),0,'student cannot obtain a faculty attendance snapshot');
 
 select set_config('request.jwt.claim.sub','10000000-0000-4000-8000-000000000002',true);
 select is((select count(*)::integer from public.attendance_records),0,'unenrolled student cannot see another student attendance');
@@ -61,12 +93,36 @@ select throws_ok($$select public.record_attendance('00000000-0000-4000-8000-0000
 select set_config('request.jwt.claim.sub','10000000-0000-4000-8000-000000000003',true);
 select is((select count(*)::integer from public.attendance_records where session_id='00000000-0000-4000-8000-000000000070'),1,'assigned faculty can see section attendance for the test session');
 select is((select count(*)::integer from public.profiles where id='10000000-0000-4000-8000-000000000001'),1,'assigned faculty can see an enrolled student display name');
+select is((select count(*)::integer from public.get_attendance_qr_context('00000000-0000-4000-8000-000000000070')),1,'assigned faculty can obtain QR context for their session');
+select is((select qr_rotation_seconds from public.get_attendance_qr_context('00000000-0000-4000-8000-000000000070')),10,'institution default QR rotation is ten seconds');
+select is((select qr_token_ttl_seconds from public.get_attendance_qr_context('00000000-0000-4000-8000-000000000070')),10,'institution default QR token lifetime is ten seconds');
+select is((select jsonb_array_length(records)::integer from public.get_attendance_session_snapshot('00000000-0000-4000-8000-000000000070')),1,'assigned faculty gets the compact attendance snapshot');
 
 select set_config('request.jwt.claim.sub','10000000-0000-4000-8000-000000000004',true);
 select is((select count(*)::integer from public.institution_memberships where user_id in ('10000000-0000-4000-8000-000000000001','10000000-0000-4000-8000-000000000002','10000000-0000-4000-8000-000000000003','10000000-0000-4000-8000-000000000004')),4,'admin can read fixture institution memberships');
+insert into public.departments(id,institution_id,name,code)
+values ('00000000-0000-4000-8000-000000000091','00000000-0000-4000-8000-000000000001','Admin Policy Test','APT');
+select is((select count(*)::integer from public.departments where id='00000000-0000-4000-8000-000000000091'),1,'institution admin can insert an academic department');
+update public.departments set name='Admin Policy Test Updated' where id='00000000-0000-4000-8000-000000000091';
+select is((select name from public.departments where id='00000000-0000-4000-8000-000000000091'),'Admin Policy Test Updated','institution admin can update an academic department');
+delete from public.departments where id='00000000-0000-4000-8000-000000000091';
+select is((select count(*)::integer from public.departments where id='00000000-0000-4000-8000-000000000091'),0,'institution admin can delete an academic department');
 
 select set_config('request.jwt.claim.sub','10000000-0000-4000-8000-000000000005',true);
 select is((select count(*)::integer from public.course_sections),0,'other institution cannot read this institution section');
+
+set local time zone 'Pacific/Kiritimati';
+select set_config('request.jwt.claim.sub','10000000-0000-4000-8000-000000000006',true);
+select lives_ok(
+  $$select public.create_attendance_session('00000000-0000-4000-8000-000000000041')$$,
+  'session creation checks term dates in the institution timezone'
+);
+select is(
+  (select count(*)::integer from public.attendance_sessions
+   where section_id='00000000-0000-4000-8000-000000000041' and status='open'),
+  1,
+  'valid local term creates an attendance session across timezone boundaries'
+);
 
 reset role;
 select * from finish();

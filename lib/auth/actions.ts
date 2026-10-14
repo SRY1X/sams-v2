@@ -3,6 +3,8 @@
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { getIdentity } from "@/lib/auth/session";
+import { safeInternalPath } from "@/lib/auth/safe-redirect";
+import { getSiteOrigin } from "@/lib/config/server-env";
 import { createClient } from "@/lib/supabase/server";
 
 const credentialsSchema = z.object({
@@ -10,6 +12,7 @@ const credentialsSchema = z.object({
   password: z.string().min(1).max(200),
 });
 
+/** Validates credentials, signs in through Supabase, and redirects to the validated next path or an error. */
 export async function signIn(formData: FormData) {
   const parsed = credentialsSchema.safeParse({
     email: String(formData.get("email") ?? "")
@@ -23,11 +26,10 @@ export async function signIn(formData: FormData) {
   const { error } = await supabase.auth.signInWithPassword(parsed.data);
   if (error) redirect("/login?error=credentials");
   const next = String(formData.get("next") ?? "/dashboard");
-  redirect(
-    next.startsWith("/") && !next.startsWith("//") ? next : "/dashboard",
-  );
+  redirect(safeInternalPath(next));
 }
 
+/** Requests a recovery email using the validated site origin and redirects to a generic confirmation. */
 export async function requestPasswordReset(formData: FormData) {
   const email = z.email().safeParse(
     String(formData.get("email") ?? "")
@@ -38,7 +40,7 @@ export async function requestPasswordReset(formData: FormData) {
   const supabase = await createClient();
   if (supabase) {
     await supabase.auth.resetPasswordForEmail(email.data, {
-      redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"}/auth/callback?next=/auth/reset-password`,
+      redirectTo: `${getSiteOrigin()}/auth/callback?next=/auth/reset-password`,
     });
   }
   redirect("/login?reset=sent");
