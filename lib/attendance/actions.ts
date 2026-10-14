@@ -15,7 +15,17 @@ export async function startAttendanceSession(formData: FormData) {
     "create_attendance_session",
     { p_section_id: sectionId.data },
   );
-  if (error || !data) redirect("/faculty?error=unavailable");
+  if (error || !data) {
+    const { data: existing } = await member.supabase
+      .from("attendance_sessions")
+      .select("id")
+      .eq("section_id", sectionId.data)
+      .eq("status", "open")
+      .gt("expires_at", new Date().toISOString())
+      .maybeSingle();
+    if (existing?.id) redirect(`/faculty?session=${existing.id}`);
+    redirect("/faculty?error=unavailable");
+  }
   redirect(`/faculty?session=${data}`);
 }
 

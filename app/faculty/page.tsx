@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { AppHeader } from "@/components/app-header";
 import { AttendanceQr } from "@/components/attendance-qr";
 import { LiveAttendanceList } from "@/components/live-attendance-list";
@@ -41,38 +42,52 @@ export default async function FacultyDashboard({
     : { data: [] };
   const courseIds = [...new Set((sections ?? []).map((row) => row.course_id))];
   const termIds = [...new Set((sections ?? []).map((row) => row.term_id))];
-  const [{ data: courses }, { data: terms }, { data: enrollments }] =
-    await Promise.all([
-      courseIds.length
-        ? member.supabase
-            .from("courses")
-            .select("id,code,title")
-            .in("id", courseIds)
-        : Promise.resolve({ data: [] }),
-      termIds.length
-        ? member.supabase
-            .from("academic_terms")
-            .select("id,name")
-            .in("id", termIds)
-        : Promise.resolve({ data: [] }),
-      sectionIds.length
-        ? member.supabase
-            .from("enrollments")
-            .select("section_id,student_user_id")
-            .in("section_id", sectionIds)
-            .eq("status", "active")
-        : Promise.resolve({ data: [] }),
-    ]);
+  const nowIso = new Date().toISOString();
+  const [
+    { data: courses },
+    { data: terms },
+    { data: enrollments },
+    { data: openSessions },
+  ] = await Promise.all([
+    courseIds.length
+      ? member.supabase
+          .from("courses")
+          .select("id,code,title")
+          .in("id", courseIds)
+      : Promise.resolve({ data: [] }),
+    termIds.length
+      ? member.supabase
+          .from("academic_terms")
+          .select("id,name")
+          .in("id", termIds)
+      : Promise.resolve({ data: [] }),
+    sectionIds.length
+      ? member.supabase
+          .from("enrollments")
+          .select("section_id,student_user_id")
+          .in("section_id", sectionIds)
+          .eq("status", "active")
+      : Promise.resolve({ data: [] }),
+    sectionIds.length
+      ? member.supabase
+          .from("attendance_sessions")
+          .select("id,section_id,status,expires_at,starts_at")
+          .in("section_id", sectionIds)
+          .eq("status", "open")
+          .gt("expires_at", nowIso)
+          .order("starts_at", { ascending: false })
+      : Promise.resolve({ data: [] }),
+  ]);
   const courseMap = new Map((courses ?? []).map((row) => [row.id, row]));
   const termMap = new Map((terms ?? []).map((row) => [row.id, row.name]));
+  const openSessionBySection = new Map(
+    (openSessions ?? []).map((row) => [row.section_id, row]),
+  );
   const selectedId = typeof query.session === "string" ? query.session : "";
-  const { data: activeSession } = selectedId
-    ? await member.supabase
-        .from("attendance_sessions")
-        .select("id,section_id,status,expires_at,starts_at")
-        .eq("id", selectedId)
-        .maybeSingle()
-    : { data: null };
+  const activeSession =
+    (openSessions ?? []).find((row) => row.id === selectedId) ??
+    (!query.closed ? openSessions?.[0] : undefined) ??
+    null;
   const selectedSection = activeSession
     ? (sections ?? []).find((row) => row.id === activeSession.section_id)
     : undefined;
@@ -172,6 +187,7 @@ export default async function FacultyDashboard({
           <div className="grid gap-4 md:grid-cols-2">
             {sections?.map((section) => {
               const course = courseMap.get(section.course_id);
+              const openSession = openSessionBySection.get(section.id);
               return (
                 <article key={section.id} className="surface p-5">
                   <div className="flex items-start justify-between gap-4">
@@ -196,19 +212,30 @@ export default async function FacultyDashboard({
                     <p className="text-[10px] text-[#a1a1a1]">
                       {termMap.get(section.term_id) ?? "Academic term"}
                     </p>
-                    <form action={startAttendanceSession}>
-                      <input
-                        type="hidden"
-                        name="section_id"
-                        value={section.id}
-                      />
-                      <button
-                        className="button !min-h-9 !px-3 !text-[11px]"
-                        type="submit"
+                    {openSession ? (
+                      <Link
+                        className="button secondary !min-h-9 !px-3 !text-[11px]"
+                        href={`/faculty?session=${openSession.id}`}
                       >
-                        Start attendance <span aria-hidden="true">→</span>
-                      </button>
-                    </form>
+                        {activeSession?.id === openSession.id
+                          ? "Session active"
+                          : "View live QR →"}
+                      </Link>
+                    ) : (
+                      <form action={startAttendanceSession}>
+                        <input
+                          type="hidden"
+                          name="section_id"
+                          value={section.id}
+                        />
+                        <button
+                          className="button !min-h-9 !px-3 !text-[11px]"
+                          type="submit"
+                        >
+                          Start attendance <span aria-hidden="true">→</span>
+                        </button>
+                      </form>
+                    )}
                   </div>
                 </article>
               );
