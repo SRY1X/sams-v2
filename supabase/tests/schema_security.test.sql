@@ -1,5 +1,5 @@
 begin;
-select plan(41);
+select plan(45);
 
 select is((select count(*)::integer from pg_catalog.pg_class c join pg_catalog.pg_namespace n on n.oid=c.relnamespace where n.nspname='public' and c.relkind='r' and not c.relrowsecurity),0,'every public table enables RLS');
 select ok(not has_table_privilege('anon','public.institution_memberships','select'),'anonymous role cannot select memberships');
@@ -12,6 +12,7 @@ select ok(has_function_privilege('authenticated','public.get_attendance_qr_conte
 select ok(not has_function_privilege('anon','public.get_attendance_session_snapshot(uuid)','execute'),'anonymous role cannot read attendance snapshots');
 select ok(has_function_privilege('authenticated','public.get_attendance_session_snapshot(uuid)','execute'),'authenticated role can request guarded attendance snapshots');
 select ok(not has_table_privilege('authenticated','public.attendance_records','insert'),'attendance records cannot be inserted directly by clients');
+select is((select count(*)::integer from pg_catalog.pg_policies where schemaname='public' and tablename in ('academic_terms','course_sections','courses','departments','enrollments','institution_settings','section_faculty') and cmd='SELECT' and roles @> array['authenticated'::name]),7,'academic admin write policies do not duplicate scoped read policies');
 select ok(exists(select 1 from pg_catalog.pg_indexes where schemaname='public' and indexname='attendance_one_open_session_per_section'),'one-open-session constraint index exists');
 select ok(not has_table_privilege('authenticated','public.institution_memberships','update'),'membership updates are not granted table-wide');
 select ok(not has_column_privilege('authenticated','public.institution_memberships','role','update'),'clients cannot update membership roles');
@@ -99,6 +100,13 @@ select is((select jsonb_array_length(records)::integer from public.get_attendanc
 
 select set_config('request.jwt.claim.sub','10000000-0000-4000-8000-000000000004',true);
 select is((select count(*)::integer from public.institution_memberships where user_id in ('10000000-0000-4000-8000-000000000001','10000000-0000-4000-8000-000000000002','10000000-0000-4000-8000-000000000003','10000000-0000-4000-8000-000000000004')),4,'admin can read fixture institution memberships');
+insert into public.departments(id,institution_id,name,code)
+values ('00000000-0000-4000-8000-000000000091','00000000-0000-4000-8000-000000000001','Admin Policy Test','APT');
+select is((select count(*)::integer from public.departments where id='00000000-0000-4000-8000-000000000091'),1,'institution admin can insert an academic department');
+update public.departments set name='Admin Policy Test Updated' where id='00000000-0000-4000-8000-000000000091';
+select is((select name from public.departments where id='00000000-0000-4000-8000-000000000091'),'Admin Policy Test Updated','institution admin can update an academic department');
+delete from public.departments where id='00000000-0000-4000-8000-000000000091';
+select is((select count(*)::integer from public.departments where id='00000000-0000-4000-8000-000000000091'),0,'institution admin can delete an academic department');
 
 select set_config('request.jwt.claim.sub','10000000-0000-4000-8000-000000000005',true);
 select is((select count(*)::integer from public.course_sections),0,'other institution cannot read this institution section');
