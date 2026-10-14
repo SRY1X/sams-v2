@@ -5,9 +5,12 @@ enabled = true
 sql_paths = ["./seed.sql"]
 
 [auth]
+# Keep public self-registration disabled while allowing provisioned users to sign in.
 enable_signup = false
 site_url = "http://localhost:3000"
 additional_redirect_urls = ["http://localhost:3000/auth/callback"]
 
 [auth.email]
-enable_signup = false
+# This enables the email/password provider; the global auth setting above still
+# blocks public account creation. Admin-provisioned demo users can sign in.
+enable_signup = true

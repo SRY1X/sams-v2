@@ -1,7 +1,14 @@
--- Synthetic academic catalog only. No user accounts or personal data are seeded.
+-- Synthetic local demonstration catalog. Never put real people or institutional
+-- records in this file. Demo accounts are created by the loopback-only script.
 insert into public.institutions(id,name,slug,timezone)
-values ('00000000-0000-4000-8000-000000000001','SAMS Demo Institution','sams-demo','UTC')
+values ('00000000-0000-4000-8000-000000000001','Open-Source University','open-source-university','Asia/Kolkata')
 on conflict (id) do nothing;
+
+-- Keep the local synthetic institution recognizable when upgrading an older
+-- local database that already had the original placeholder row.
+update public.institutions
+set name='Open-Source University', slug='open-source-university', timezone='Asia/Kolkata'
+where id='00000000-0000-4000-8000-000000000001';
 
 insert into public.institution_settings(institution_id)
 values ('00000000-0000-4000-8000-000000000001') on conflict (institution_id) do nothing;

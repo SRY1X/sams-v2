@@ -1,32 +1,78 @@
+<div align="center">
+
 # SAMS V2
 
-SAMS V2 is an open-source academic management web application for students, faculty, and institutional administrators. The MVP brings role-scoped academic portals and QR-based attendance together in one installable application.
+### Open academic infrastructure for the people who make a campus work.
 
-> **Project status:** MVP in active development. Review the security, privacy, retention, backup, and institution policy requirements before using real academic records. The local seed contains synthetic academic structure only; it does not create demo users or passwords.
+An open-source academic workspace for students, faculty, and administrators—with institution-scoped access and QR attendance.
 
-## What the MVP includes
+[![Quality checks](https://github.com/SRY1X/sams-v2/actions/workflows/quality.yml/badge.svg)](https://github.com/SRY1X/sams-v2/actions/workflows/quality.yml)
+[![MIT License](https://img.shields.io/badge/license-MIT-16a36a.svg)](LICENSE)
+[![Next.js](https://img.shields.io/badge/Next.js-App%20Router-111111?logo=next.js)](https://nextjs.org/docs)
+[![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178c6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 
-- Student, faculty, and administrator roles with database-enforced access control.
-- Institution-configurable departments, terms, courses, sections, faculty assignments, and enrollments.
-- Faculty-created attendance sessions with short-lived rotating QR codes.
-- Student check-in validated against authentication, enrollment, session state, and database constraints.
-- Student attendance history, faculty session records, and institution-scoped administration.
-- PostgreSQL migrations, Row Level Security policies, audit events, and synthetic local seed data.
+</div>
 
-The rotating QR limits reuse of old screenshots but cannot prove physical presence or prevent someone relaying a live code. Read [the attendance design](docs/attendance.md) before adopting the workflow. Face recognition, location tracking, grading, messaging, and other larger features are intentionally outside the MVP.
+> **Project status:** Early MVP, actively developed. This is suitable for local exploration and synthetic-data demonstrations. Complete an institution-specific security, privacy, accessibility, backup, and operational review before using real academic records.
 
-## Run SAMS locally — step by step
+## Why SAMS?
 
-### 1. Install the prerequisites
+Academic tools should be understandable, adaptable, and owned by the communities that use them. SAMS V2 is being built in public with clear setup instructions, PostgreSQL migrations, database-enforced authorization, and a local demonstration dataset. A new contributor should be able to clone it, run it, and understand where to make a change without private knowledge from the original author.
+
+### MVP capabilities
+
+| Students                                                                              | Faculty                                                                                | Administrators                                                                          |
+| ------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| View enrolled sections and personal attendance history; check in to eligible sessions | Manage assigned sections; create and close attendance sessions; review section records | Configure the institution's academic structure, membership, assignments, and enrollment |
+
+The initial attendance method is a time-limited, rotating QR code. It limits casual reuse of an old screenshot, but **cannot prove physical presence or stop a live QR relay or a person using someone else's signed-in account**. Do not treat it as identity verification. Those risks require explicit policy and further security work; face recognition and location tracking are not part of the MVP.
+
+## Architecture at a glance
+
+```mermaid
+flowchart LR
+  Browser[Student / Faculty / Admin browser]
+  App[Next.js App Router<br/>typed server operations]
+  Auth[Supabase Auth]
+  DB[(PostgreSQL<br/>constraints + RLS)]
+  QR[Short-lived signed QR token]
+  Hosting[Vercel or another Node host]
+
+  Browser --> Hosting
+  Hosting --> App
+  App <--> Auth
+  App --> DB
+  App --> QR
+  QR --> Browser
+  Browser --> App
+```
+
+Core academic data lives in PostgreSQL. Supabase provides the initial managed authentication and database services; Vercel is the initial hosting option. Domain rules are kept in typed application modules and PostgreSQL migrations so the application is not defined by a hosting dashboard. See [the architecture overview](docs/architecture.md) and [database/RLS guide](docs/database.md).
+
+## Run the project locally — complete beginner guide
+
+### Step 1: Install the prerequisites
+
+Use [the detailed prerequisite guide](docs/prerequisites.md) for official install links and OS-specific steps. In brief, install:
 
 - Git
-- Node.js **22.22.2+ in the 22.x line**, **24.15.0+ in the 24.x line**, or **26.0.0+**; npm is included with Node.js
-- Docker Desktop (Windows/macOS) or another Docker-compatible runtime, running before you start Supabase
+- Node.js **22.22.2+ in the 22.x line**, **24.15.0+ in the 24.x line**, or **26.0.0+** (npm comes with Node.js)
+- Docker Desktop on Windows/macOS, or another Docker-compatible runtime
+- WSL 2 on Windows is recommended for a Linux development shell
 - A modern browser
 
-The Supabase CLI is a project dependency, so you do not need to install it globally.
+Supabase CLI is already pinned as a project dependency. You do not need to install it globally. Verify the tools in a fresh terminal:
 
-### 2. Clone the repository and install dependencies
+```sh
+git --version
+node --version
+npm --version
+docker version
+```
+
+On Windows, choose PowerShell **or** WSL for the checkout and consistently use the corresponding Node, npm, and Git. Avoid installing a second Node/Docker runtime inside WSL if you intend to work from Windows PowerShell. Docker must be running before the local Supabase services can start.
+
+### Step 2: Clone SAMS and install the locked dependencies
 
 ```sh
 git clone https://github.com/SRY1X/sams-v2.git
@@ -34,78 +80,73 @@ cd sams-v2
 npm ci
 ```
 
-### 3. Start the local Supabase services
+`npm ci` installs the exact dependency versions recorded in `package-lock.json`. For package changes, use `npm install <package>` and commit both the manifest and lockfile.
 
-Start Docker Desktop, then run:
+### Step 3: Start the local database and Auth services
+
+Make sure Docker Desktop/Engine is running, then:
 
 ```sh
+npm exec -- supabase --version
 npm exec -- supabase start
 npm exec -- supabase status
 ```
 
-The local stack applies the checked-in migrations and `supabase/seed.sql`. The status output includes local URLs and keys. Use only the local API URL and publishable key when filling in the next step. **Do not paste the full status output into an issue, pull request, screenshot, or chat:** it also contains local secret keys.
+The first start downloads local service images and may take a few minutes. Supabase applies the migrations and synthetic academic seed. The status command displays local URLs and secret keys; keep that output private. Copy only the needed values into the local environment files in the next step. **Do not run demo seeding against a hosted Supabase URL.**
 
-### 4. Create your local environment file
+### Step 4: Configure local-only environment files
 
-In Windows PowerShell:
+Create `.env.local` for the web application and `.env.demo.local` for the synthetic-user setup. These files are ignored by Git.
+
+Windows PowerShell:
 
 ```powershell
 Copy-Item .env.example .env.local
+Copy-Item .env.example .env.demo.local
 ```
 
-On macOS or Linux:
+macOS/Linux:
 
 ```sh
 cp .env.example .env.local
+cp .env.example .env.demo.local
 ```
 
-Open `.env.local` and set the local Supabase URL and publishable key reported by `supabase status`. The default local URL is usually `http://127.0.0.1:54321`. Generate a local-only QR signing secret with Node.js:
+Edit `.env.local` with the local Supabase API URL and publishable/anon key from `supabase status`, plus a newly generated local signing key:
 
 ```sh
 node -e "console.log(require('node:crypto').randomBytes(48).toString('base64url'))"
 ```
 
-Set the generated value as `ATTENDANCE_TOKEN_SECRET` and set `NEXT_PUBLIC_SITE_URL=http://localhost:3000`. Keep `.env.local` private; it is ignored by Git. For variable descriptions and optional configuration, see [Environment configuration](docs/environment.md).
+Set `ATTENDANCE_TOKEN_SECRET` to the generated value and `NEXT_PUBLIC_SITE_URL=http://localhost:3000`. In `.env.demo.local`, set the same local URL and the **local** `SUPABASE_SERVICE_ROLE_KEY` from local status. The service-role key bypasses RLS; the demo script will only accept a loopback URL, but still do not commit or share this key. See [every environment variable and its scope](docs/environment.md).
 
-`SUPABASE_SERVICE_ROLE_KEY` is optional and only needed to try the administrator invitation flow locally. If you enable it, use the **local** service key from the local Supabase status output. It bypasses RLS and must never be sent to a browser, committed, or copied from production.
+### Step 5: Create the synthetic demonstration accounts
 
-### 5. Create the first local administrator
+```sh
+npm run demo:seed
+```
 
-1. Open local Supabase Studio, usually at `http://127.0.0.1:54323`.
-2. Go to **Authentication → Users** and add a synthetic local user. Copy that user's UUID from the user list.
-3. Open the Studio SQL Editor and run the following query, replacing the UUID placeholder with the local user ID:
+The idempotent script prepares the local administrator, faculty, and student accounts, connects the faculty and student to the sample course, and adds one historical attendance record. It refuses any non-loopback Supabase URL. All records are fictional and use reserved `.example.test` email addresses.
 
-   ```sql
-   insert into public.institution_memberships (institution_id, user_id, role, status)
-   values (
-     '00000000-0000-4000-8000-000000000001',
-     'REPLACE-WITH-LOCAL-USER-UUID',
-     'admin',
-     'active'
-   );
-   ```
+| Role    | Email                          | Local demo password      |
+| ------- | ------------------------------ | ------------------------ |
+| Admin   | `admin@sams-v2.example.test`   | `SamsDemo!LocalOnly2026` |
+| Faculty | `faculty@sams-v2.example.test` | `SamsDemo!LocalOnly2026` |
+| Student | `student@sams-v2.example.test` | `SamsDemo!LocalOnly2026` |
 
-This is a trusted local bootstrap operation. It is not an application endpoint and must not be used to let users grant themselves roles. Production setup has additional requirements; follow [the installation and first-administrator guide](docs/setup.md).
+These published credentials are strictly for **local synthetic data**. Never create them or use their password in a hosted, preview, staging, or production database. A hosted demo must use a separate synthetic project and unique credentials that are not committed here.
 
-### 6. Start the web app
+### Step 6: Start the web application
 
 ```sh
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) and sign in with the local administrator account. Use the admin portal to create a department, an academic term whose dates include today, a course, and a course section. Invite or create synthetic faculty and student accounts, then assign the faculty member and enroll the student in that section. Local invitation and recovery emails are captured by Supabase's local email testing inbox; the local Supabase status output shows its URL.
+Open [http://localhost:3000](http://localhost:3000) and sign in using any local demo identity above. Start with the faculty account to create an active attendance session; then scan its QR using the student account. For the seeded historical attendance, sign in as the student and open attendance history.
 
-### 7. Try the attendance workflow
+Camera access is restricted to secure browser contexts. `http://localhost` is treated as secure on the same computer, while `http://192.168.x.x` is not. For mobile scanning, use an HTTPS preview connected to your own isolated Supabase project with synthetic records. The seeded session is closed history; faculty must create a new active session to scan.
 
-1. Sign in as the faculty account and open its assigned section.
-2. Start an attendance session and display the rotating QR code.
-3. Sign in as the enrolled student on another device or browser and open **Scan QR**.
-4. Allow camera access, scan the currently displayed QR, and confirm the check-in.
-5. Return to the faculty session to confirm the student appears once. The student can also review their own attendance history.
-
-**Camera note:** Browsers require a secure context for camera access. `http://localhost` is treated as secure on the same computer, but a phone opening an `http://192.168.x.x` LAN address cannot use the browser camera. For phone testing, use an HTTPS preview connected to a separate staging Supabase project with synthetic data. Do not point a public preview at production student records. See [deployment guidance](docs/deployment.md).
-
-### 8. Run the project checks
+### Step 7: Validate a contribution
 
 ```sh
 npm run format:check
@@ -118,32 +159,69 @@ npm exec -- supabase test db
 npm run build
 ```
 
-Database checks require the local Supabase stack to be running. Pull requests run the automated checks in GitHub Actions.
+The local Supabase stack must be running for the database checks. GitHub Actions runs the project checks for pull requests; no production credentials are required in CI.
 
-## Deploy your own instance
+## Deploy an independent institution instance
 
-Use your own Supabase project and Vercel project. Create separate staging and production Supabase projects, apply reviewed migrations to the intended project, configure Auth redirects and email delivery, and put environment variables in the hosting provider's environment settings. Never use this project's test accounts or another institution's data. Follow the [deployment guide](docs/deployment.md) and [environment variable reference](docs/environment.md).
+Do not deploy this repository against the public project's development data. Create your own Supabase and Vercel projects, then follow [the deployment guide](docs/deployment.md):
+
+1. Review and apply the versioned SQL migrations to your own Supabase project.
+2. Set institution name, timezone, academic structure, Auth URLs, and a trusted initial administrator in that project.
+3. Configure email delivery and disable open sign-up unless you have a reviewed provisioning policy.
+4. Import the GitHub repository into Vercel (or another supported Node host).
+5. Add the required environment variables in that host's encrypted project settings, using separate preview and production credentials.
+6. Test authentication, RLS, student check-in, faculty records, backups, and rollback with synthetic data before inviting real users.
+
+The local demo seeder is deliberately unsuitable for hosted environments. Never add real university names, accounts, identifiers, attendance exports, credentials, or screenshots to public seeds, issues, pull requests, or docs.
+
+## Project map
+
+```text
+app/                  Next.js routes, pages, and narrow API endpoints
+components/           Shared UI and feature components
+lib/                  Auth, database clients, validation, and domain operations
+supabase/migrations/  Versioned schema, constraints, functions, grants, and RLS
+supabase/seed.sql     Synthetic local academic catalog only
+scripts/              Local-only demo setup utilities
+docs/                 Setup, architecture, database, security, and deployment guides
+.github/              Contribution templates and automated quality checks
+```
+
+See [the documentation index](docs/architecture.md) for architecture boundaries and module responsibilities.
+
+## Open-source and contribution guide
+
+- **License:** MIT. See [LICENSE](LICENSE) and [third-party notices](DEPENDENCIES.md).
+- **Start contributing:** [CONTRIBUTING.md](CONTRIBUTING.md)
+- **Accessibility:** [ACCESSIBILITY.md](ACCESSIBILITY.md)
+- **Security reports:** [SECURITY.md](SECURITY.md) — use GitHub private vulnerability reporting for sensitive security issues.
+- **Community standards:** [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)
+- **New contributor setup:** [docs/prerequisites.md](docs/prerequisites.md)
+- **Local synthetic demo:** [docs/demo.md](docs/demo.md)
+
+Issue and pull request templates guide reports. Use synthetic data only, include verification steps, and flag changes to RLS, Auth, session signing, role assignment, or personal-data handling. See [the troubleshooting guide](docs/troubleshooting.md) if setup fails.
 
 ## Documentation
 
-- [Architecture overview](docs/architecture.md)
+- [Installation and first administrator](docs/setup.md)
+- [Prerequisites: Node, npm, Git, Docker, WSL, Supabase CLI, and Vercel](docs/prerequisites.md)
+- [Local development](docs/local-development.md)
+- [Synthetic demonstration data](docs/demo.md)
+- [Architecture](docs/architecture.md)
 - [Database schema and RLS](docs/database.md)
 - [Authentication and authorization](docs/auth-and-authorization.md)
-- [Attendance lifecycle and limitations](docs/attendance.md)
-- [Local installation and admin bootstrap](docs/setup.md)
-- [Local development conventions](docs/local-development.md)
+- [Attendance lifecycle, security, and limitations](docs/attendance.md)
+- [Environment variables](docs/environment.md)
 - [Institution configuration](docs/configuration.md)
 - [Vercel and Supabase deployment](docs/deployment.md)
 - [Troubleshooting](docs/troubleshooting.md)
-- [Contributing](CONTRIBUTING.md)
-- [Code of conduct](CODE_OF_CONDUCT.md)
-- [Security reporting](SECURITY.md)
-- [Third-party package and asset licenses](DEPENDENCIES.md)
 
-## Contributing
+---
 
-Issues and focused pull requests are welcome. Start with [CONTRIBUTING.md](CONTRIBUTING.md), use synthetic data, and include tests for changes to authorization, database rules, and attendance behavior. Please do not post credentials, QR tokens, or real student/faculty data in public issues. The `private` field in `package.json` only prevents accidental npm package publication; GitHub repository visibility is configured separately.
+<div align="center">
 
-## License
+**Built for the people who make a campus work.**
 
-SAMS V2 is distributed under the [MIT License](LICENSE). Third-party packages and services retain their own terms; see [DEPENDENCIES.md](DEPENDENCIES.md) and the upstream notices for each package.
+MIT licensed · community maintained · institution configurable
+
+</div>

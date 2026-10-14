@@ -10,7 +10,8 @@
     "typecheck": "tsc --noEmit",
     "format:check": "prettier --check \"**/*.{js,jsx,ts,tsx,mjs,cjs,json,css,md,yml,yaml}\"",
     "format": "prettier --write \"**/*.{js,jsx,ts,tsx,mjs,cjs,json,css,md,yml,yaml}\"",
-    "test": "vitest run"
+    "test": "vitest run",
+    "demo:seed": "node --env-file=.env.demo.local scripts/seed-demo-users.mjs"
   },
   "engines": {
     "node": "^22.22.2 || ^24.15.0 || >=26.0.0"

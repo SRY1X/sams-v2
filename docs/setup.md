@@ -1,33 +1,66 @@
 # Installation and first administrator
 
-## Requirements
+This guide covers a fresh local installation and trusted administrator bootstrap. For installing Node, npm, Git, Docker, WSL, Supabase CLI, or Vercel tooling, start with [the prerequisites guide](prerequisites.md). For the local synthetic login accounts, see [demo data](demo.md).
 
-- Node.js 22.22.2 or newer in the 22.x line, 24.15.0 or newer in the 24.x line, or 26.0.0 or newer; npm; Git; and a Docker-compatible runtime.
-- Supabase CLI (installed with project dependencies) for local PostgreSQL/Auth, or a Supabase project for hosted development.
-- A modern browser; student check-in is designed for a phone camera’s native QR reader.
+## Local installation
 
-## Local setup
+1. Clone the repository and install pinned dependencies:
 
-1. Clone the repository, then run `npm ci`.
-2. Run `npm exec -- supabase start`. The local stack applies migrations and the synthetic academic catalog seed. No user accounts or personal data are seeded.
-3. Create `.env.local` from `.env.example`. On Windows PowerShell run `Copy-Item .env.example .env.local`; on macOS/Linux run `cp .env.example .env.local`. Use only the local API URL and publishable key from `npm exec -- supabase status` (the output also contains local secret keys; do not share it). Generate a local HMAC key with `node -e "console.log(require('node:crypto').randomBytes(48).toString('base64url'))"`.
-4. Open local Supabase Studio and create one Auth user. The auth trigger creates the corresponding profile.
-5. In the local SQL editor, run the following statement using the new Auth user ID from Studio:
-
-   ```sql
-   insert into public.institution_memberships (institution_id, user_id, role, status)
-   values ('00000000-0000-4000-8000-000000000001', 'REPLACE-WITH-LOCAL-USER-UUID', 'admin', 'active');
+   ```sh
+   git clone https://github.com/SRY1X/sams-v2.git
+   cd sams-v2
+   npm ci
    ```
 
-   This is a trusted-owner bootstrap step. Do not expose an equivalent self-service admin operation. For a hosted institution, run the same operation only in its intended project and under the project owner’s control.
+2. Start Docker Desktop/Engine, then start the local Supabase stack:
 
-6. To enable admin invitations locally, you may copy the local service-role key from the local `supabase status` output into `.env.local`. It bypasses RLS; keep it server-only, never use a production key for local work, and never commit or share it. The app uses it only after verifying the signed-in administrator in a server action.
-7. Run `npm run dev`, open `http://localhost:3000`, sign in, create academic sections, invite users, then assign/enroll them.
+   ```sh
+   npm exec -- supabase start
+   npm exec -- supabase status
+   ```
 
-## Hosted Supabase setup
+   This applies the checked-in migrations and synthetic academic catalog. Local email/password authentication is enabled for existing provisioned accounts, while public sign-up remains disabled. Keep status output private because it contains local credentials.
 
-Create a fresh project, review the migrations, and apply them through your approved migration workflow. Create the first Auth administrator in Supabase Auth and grant the initial membership with a trusted project-owner SQL session. Configure the site URL and callback allow-list, disable public sign-up, and use a verified SMTP provider before sending real invitations or password reset links. Keep the service-role and signing secrets server-only.
+3. Create `.env.local` and `.env.demo.local` from `.env.example`. Configure `.env.local` with the local API URL, publishable key, local QR signing secret, and `NEXT_PUBLIC_SITE_URL=http://localhost:3000`. Configure `.env.demo.local` with the same local URL and the local service-role key. See [environment configuration](environment.md) and [the synthetic demo guide](demo.md).
 
-## Demo data
+4. Create the demo sign-in identities and associated section assignments:
 
-`supabase/seed.sql` adds a clearly labeled synthetic institution, department, term, course, and section. It adds no people, attendance, email addresses, or default passwords. Do not use real institutional records in seed files or screenshots.
+   ```sh
+   npm run demo:seed
+   ```
+
+   The script checks for an HTTP loopback URL and exits before making requests if it is pointed anywhere else. The credentials are public, synthetic, and local-only. Do not copy them into a hosted project.
+
+5. Start the web app and sign in:
+
+   ```sh
+   npm run dev
+   ```
+
+   Open `http://localhost:3000`; log in as admin, faculty, or student using the account table in [docs/demo.md](demo.md).
+
+## Trusted initial administrator for a hosted institution
+
+The local demo accounts must never be created in a hosted institution. For a hosted project, a trusted project owner should create the first Auth user in the intended Supabase project, then grant its institution membership in that project's SQL editor using the user's Auth UUID:
+
+```sql
+insert into public.institution_memberships (institution_id, user_id, role, status)
+values ('YOUR_INSTITUTION_UUID', 'YOUR_AUTH_USER_UUID', 'admin', 'active');
+```
+
+This is a one-time owner operation. Do not build a public endpoint or UI that allows a user to assign themselves the admin role. Keep the project owner and service-role credentials private, and audit later role changes. Configure Auth redirect URLs, verified email delivery, signup policy, institution timezone, backup, and recovery before allowing real users. Follow [the deployment guide](deployment.md).
+
+## Local reset
+
+`supabase db reset --local` deletes and rebuilds the local database. Confirm that you are working on the local stack, not a linked project, then run:
+
+```sh
+npm exec -- supabase db reset --local
+npm run demo:seed
+```
+
+The first command is destructive to local Supabase data. It is not required for ordinary development. Do not run a reset command against a hosted or production project.
+
+## Production data boundary
+
+Never use real student or faculty records in demo scripts, seed data, tests, sample screenshots, issue reports, or pull requests. Each institution should operate its own Supabase and hosting projects with separate credentials. Review retention, access, privacy, and incident response requirements before storing real academic data.

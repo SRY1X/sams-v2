@@ -43,12 +43,12 @@ values ('00000000-0000-4000-8000-000000000001','00000000-0000-4000-8000-00000000
 insert into public.enrollments(institution_id,section_id,student_user_id)
 values ('00000000-0000-4000-8000-000000000001','00000000-0000-4000-8000-000000000040','10000000-0000-4000-8000-000000000001');
 insert into public.attendance_sessions(id,institution_id,section_id,created_by,expires_at)
-values ('00000000-0000-4000-8000-000000000050','00000000-0000-4000-8000-000000000001','00000000-0000-4000-8000-000000000040','10000000-0000-4000-8000-000000000003',now()+interval '1 hour');
+values ('00000000-0000-4000-8000-000000000070','00000000-0000-4000-8000-000000000001','00000000-0000-4000-8000-000000000040','10000000-0000-4000-8000-000000000003',now()+interval '1 hour');
 
 set local role authenticated;
 select set_config('request.jwt.claim.sub','10000000-0000-4000-8000-000000000001',true);
-select is(public.record_attendance('00000000-0000-4000-8000-000000000050'),'recorded','enrolled student can check in');
-select is(public.record_attendance('00000000-0000-4000-8000-000000000050'),'already_recorded','duplicate check-in is idempotent');
+select is(public.record_attendance('00000000-0000-4000-8000-000000000070'),'recorded','enrolled student can check in');
+select is(public.record_attendance('00000000-0000-4000-8000-000000000070'),'already_recorded','duplicate check-in is idempotent');
 select is((select count(*)::integer from public.institution_memberships),1,'student sees only their own membership');
 select is((select count(*)::integer from public.course_sections),1,'enrolled student sees the enrolled section');
 select is((select count(*)::integer from public.attendance_records),1,'student sees their own attendance record');
@@ -56,14 +56,14 @@ select is((select count(*)::integer from public.profiles where id='10000000-0000
 
 select set_config('request.jwt.claim.sub','10000000-0000-4000-8000-000000000002',true);
 select is((select count(*)::integer from public.attendance_records),0,'unenrolled student cannot see another student attendance');
-select throws_ok($$select public.record_attendance('00000000-0000-4000-8000-000000000050')$$,'42501','Not eligible for this session','unenrolled student cannot submit attendance');
+select throws_ok($$select public.record_attendance('00000000-0000-4000-8000-000000000070')$$,'42501','Not eligible for this session','unenrolled student cannot submit attendance');
 
 select set_config('request.jwt.claim.sub','10000000-0000-4000-8000-000000000003',true);
-select is((select count(*)::integer from public.attendance_records),1,'assigned faculty can see section attendance');
+select is((select count(*)::integer from public.attendance_records where session_id='00000000-0000-4000-8000-000000000070'),1,'assigned faculty can see section attendance for the test session');
 select is((select count(*)::integer from public.profiles where id='10000000-0000-4000-8000-000000000001'),1,'assigned faculty can see an enrolled student display name');
 
 select set_config('request.jwt.claim.sub','10000000-0000-4000-8000-000000000004',true);
-select is((select count(*)::integer from public.institution_memberships),4,'admin can read institution memberships');
+select is((select count(*)::integer from public.institution_memberships where user_id in ('10000000-0000-4000-8000-000000000001','10000000-0000-4000-8000-000000000002','10000000-0000-4000-8000-000000000003','10000000-0000-4000-8000-000000000004')),4,'admin can read fixture institution memberships');
 
 select set_config('request.jwt.claim.sub','10000000-0000-4000-8000-000000000005',true);
 select is((select count(*)::integer from public.course_sections),0,'other institution cannot read this institution section');
