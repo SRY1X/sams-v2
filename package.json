@@ -20,7 +20,7 @@
     "@supabase/supabase-js": "2.117.2",
     "@zxing/browser": "0.1.5",
     "@zxing/library": "0.21.3",
-    "next": "16.4.0",
+    "next": "16.4.2",
     "qrcode.react": "^4.2.0",
     "react": "19.2.8",
     "react-dom": "19.2.8",
