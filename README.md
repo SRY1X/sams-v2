@@ -6,6 +6,10 @@
 
 An open-source workspace for students, faculty, and academic administrators. The MVP brings course setup and rotating QR attendance into one responsive web application.
 
+<img src="docs/images/sams-v2-readme-hero.svg" width="100%" alt="Illustration of the SAMS academic workspace with a course roster and decorative QR-style motif. The roster is synthetic and the QR pattern is not scannable." />
+
+<p align="center"><sub>Illustrative artwork · synthetic roster · decorative QR motif</sub></p>
+
 [Open the public landing page](https://sams-v2-god-speed2.vercel.app) · [Set up your own instance](#deploy-your-own-instance) · [Contribute](CONTRIBUTING.md)
 
 <br />
@@ -14,12 +18,16 @@ An open-source workspace for students, faculty, and academic administrators. The
 [![MIT license](https://img.shields.io/badge/license-MIT-287a57.svg)](LICENSE)
 [![Next.js App Router](https://img.shields.io/badge/Next.js-App%20Router-111111?logo=next.js)](https://nextjs.org/docs)
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178c6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL%20%2B%20Auth-3FCF8E?logo=supabase&logoColor=white)](https://supabase.com/)
+[![Node.js](https://img.shields.io/badge/Node.js-supported-5FA04E?logo=node.js&logoColor=white)](https://nodejs.org/)
+[![QR rotation](https://img.shields.io/badge/QR%20rotation-10s-f08b4b)](docs/attendance.md)
 
 </div>
 
 ---
 
-> **Project status — MVP.** The public landing page is available to browse, but there are no shared demo logins. The homepage's sample workspace is illustrative; it is not live attendance data. Create a separate Supabase project and synthetic accounts for a hands-on demonstration. Review your institution's privacy, security, retention, backup, and accessibility requirements before using real academic records.
+> [!NOTE]
+> **MVP · no shared demo logins.** The public landing page is available to browse. Its sample workspace is illustrative, not live attendance data. Create your own Supabase project and synthetic accounts for a hands-on demonstration. Review your institution's privacy, security, retention, backup, and accessibility requirements before using real academic records.
 
 ## Contents
 
@@ -35,7 +43,7 @@ An open-source workspace for students, faculty, and academic administrators. The
 
 ## What the MVP includes
 
-| Student                                                                                      | Faculty                                                                                                                   | Administrator                                                                                                                                 |
+| **01 · STUDENT**                                                                             | **02 · FACULTY**                                                                                                          | **03 · ADMINISTRATOR**                                                                                                                        |
 | -------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
 | See enrolled sections, scan an active attendance QR, and review personal attendance history. | See assigned sections, start or close an attendance session, display its rotating QR, and review the live section roster. | Set up departments, terms, courses, and sections; assign faculty; enroll students; manage member access; and review institution audit events. |
 
@@ -80,6 +88,8 @@ The membership row is authoritative for the user's role. The application uses th
 
 Every public table has Row Level Security enabled. Students see their own records and enrolled sections; faculty see assigned sections and their attendance; admins manage records within their institution. Database constraints, indexes, grants, helper functions, and policy tests are versioned with the migrations. Read [the schema and RLS guide](docs/database.md) before changing database behavior.
 
+---
+
 ## Deploy your own instance
 
 This is the recommended route for institutions and project demonstrations. It deploys the application on Vercel and uses a Supabase project you control. You need a small local toolchain to apply the versioned migrations; you do **not** need to run a local web server, PostgreSQL instance, Docker Desktop, or WSL for this hosted setup.
@@ -119,7 +129,8 @@ npm exec -- supabase db push --linked
 
 Replace `YOUR_GITHUB_USERNAME` and `YOUR_SUPABASE_PROJECT_REF` before running the commands. `supabase login` opens the Supabase CLI authentication flow. `supabase link` selects the remote project and may ask for its database password; do not put the password in the command or in Git.
 
-**Before the final command**, check the project name and reference in the Supabase dashboard. Review the dry-run output and continue only when it lists the migrations you intend to apply to that project. The last command changes the linked remote database. These commands apply files under `supabase/migrations/`; they do not create Auth users, courses, sections, enrollments, or attendance records.
+> [!WARNING]
+> Before the final command, check the project name and reference in the Supabase dashboard. Review the dry-run output and continue only when it lists the migrations you intend to apply to that project. `supabase db push --linked` changes the selected remote database. These commands apply files under `supabase/migrations/`; they do not create Auth users, courses, sections, enrollments, or attendance records.
 
 The first migration creates a neutral placeholder institution with this ID:
 
@@ -189,7 +200,8 @@ Generate a signing secret in a terminal with Node.js:
 node -e "console.log(require('node:crypto').randomBytes(48).toString('base64url'))"
 ```
 
-Copy the output directly into the Vercel environment variable. Do not commit it, put it in `.env.example`, or share it in issues, screenshots, or logs. If it is ever exposed, replace it in Vercel and redeploy; QR tokens signed with the old value will stop validating.
+> [!IMPORTANT]
+> Copy the generated value directly into the Vercel environment variable. Do not commit it, put it in `.env.example`, or share it in issues, screenshots, or logs. If it is ever exposed, replace it in Vercel and redeploy; QR tokens signed with the old value will stop validating.
 
 `SUPABASE_SERVICE_ROLE_KEY` is **not** needed for manual account provisioning. It is optional only if you enable the admin invitation feature. If used, add it as a server-only Vercel variable—never prefix it with `NEXT_PUBLIC_` and never use it for routine user requests.
 
@@ -234,14 +246,18 @@ There are no shared demo accounts in the repository. The landing page's overview
 
 For a presentation, create three Auth users using the steps above and make an invented academic catalog—for example, **Open-Source University**, department **Computing**, course **COMP-101**, term **2026 · Term 1**, and section **A**. These are examples only. You can use `Asia/Kolkata` when the institution operates on India Standard Time. Keep the demonstration in its own Supabase project and remove test users when it is no longer needed. The [demo guide](docs/demo.md) has a refresh and cleanup checklist.
 
+---
+
 ## Security and known limits
+
+> [!WARNING]
+> **Account sharing and QR relays.** The app records attendance for the authenticated account. Software alone cannot prove who is holding the phone or prevent someone from sharing credentials or relaying a live QR. The 10-second token window makes stale screenshots less useful; it does not make attendance impossible to proxy.
 
 - **Database-enforced access:** RLS is enabled on exposed tables. Foreign keys, unique constraints, role-scoped policies, and transactional functions enforce authorization and prevent duplicate attendance. Server checks provide immediate feedback; database policies remain the authorization boundary.
 - **Secrets:** `.env.example` contains placeholders only. Local `.env*` files and Vercel project metadata are ignored by Git. Never place service-role keys, database passwords, Vercel tokens, signing secrets, or personal access tokens in the repository.
 - **Role assignment:** Authentication proves which account is signed in. An active `institution_memberships` row grants its SAMS role. Profile text or client state cannot grant admin access.
 - **QR privacy:** Tokens expire quickly, contain no student identity, and are not sent in the initial page request. Camera decoding stays on the device; no image, video, location, or biometric data is collected by this workflow.
 - **Auditability:** Academic changes, session creation and closure, and attendance writes are recorded with limited metadata. Do not log tokens, credentials, or unnecessary personal details.
-- **Account sharing and relays:** The app records attendance for the authenticated account. Software alone cannot prove who is holding the phone or prevent someone from sharing credentials or relaying a live QR. The 10-second token window makes stale screenshots less useful; it does not make attendance impossible to proxy.
 - **Performance:** The QR rotation is 10 seconds and the live faculty list refreshes every two seconds while visible. Noticeable end-to-end delay has been observed in demonstrations; performance work and published latency targets remain future work. Network and database placement affect response time.
 - **Institution scope:** The MVP targets one institution per installation and an English interface. The schema carries institution IDs and the institution timezone, but there is no multi-institution switcher, translated UI, gradebook, or generic plugin system yet.
 
@@ -261,6 +277,8 @@ docs/                   Setup, deployment, architecture, security, and support g
 ```
 
 The project intentionally uses a root-level `app/`, `components/`, and `lib/` structure. It does not add a parallel `src/` tree. Route components stay focused on presentation and call typed domain operations; PostgreSQL migrations own persistent constraints and policies.
+
+---
 
 ## Contributing and quality checks
 
@@ -282,6 +300,8 @@ npm run build
 If you run `npm run build` locally without real project configuration, copy `.env.example` to `.env.local`; its placeholder values are for checks only and must never be deployed. GitHub Actions runs the same application checks and also starts an isolated Supabase database to lint migrations and run SQL/RLS tests. Contributors do not need Docker or WSL for ordinary UI or documentation changes. Database contributors can optionally use Docker for the same isolated tests on their own machine; no hosted production credentials are used by CI.
 
 Changes to RLS, migrations, authentication, role assignment, token signing, or personal-data handling need focused allowed-and-denied tests and careful review. Keep fixtures synthetic. Include the user impact, verification steps, accessibility impact, and any migration or environment changes in the pull request. The repository uses MIT licensing; review [third-party dependency notices](DEPENDENCIES.md) before adding packages, fonts, icons, images, or other assets. The ZXing license notice in that file needs to be preserved and checked against upstream before any vendoring or redistribution.
+
+---
 
 ## Documentation, license, and support
 

@@ -1,0 +1,116 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="520" viewBox="0 0 1600 520" fill="none">
+  <defs>
+    <linearGradient id="surface" x1="76" y1="18" x2="1500" y2="520" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#111817"/>
+      <stop offset="0.55" stop-color="#101313"/>
+      <stop offset="1" stop-color="#0d1112"/>
+    </linearGradient>
+    <linearGradient id="mint" x1="80" y1="90" x2="1510" y2="440" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#88d8b0"/>
+      <stop offset="1" stop-color="#55b996"/>
+    </linearGradient>
+    <linearGradient id="amber" x1="105" y1="91" x2="500" y2="425" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#ffb15f"/>
+      <stop offset="1" stop-color="#f47d3f"/>
+    </linearGradient>
+    <radialGradient id="glowMint" cx="0" cy="0" r="1" gradientTransform="matrix(370 202 -183 335 1290 167)" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#6ccba3" stop-opacity=".22"/>
+      <stop offset="1" stop-color="#6ccba3" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="glowAmber" cx="0" cy="0" r="1" gradientTransform="matrix(290 157 -116 214 194 459)" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#f58a4c" stop-opacity=".13"/>
+      <stop offset="1" stop-color="#f58a4c" stop-opacity="0"/>
+    </radialGradient>
+    <pattern id="grid" width="36" height="36" patternUnits="userSpaceOnUse">
+      <path d="M36 0H0V36" stroke="#b7d7c9" stroke-opacity=".07"/>
+    </pattern>
+    <filter id="shadow" x="0" y="0" width="1" height="1" color-interpolation-filters="sRGB" filterUnits="objectBoundingBox">
+      <feGaussianBlur stdDeviation="20"/>
+    </filter>
+  </defs>
+
+  <rect width="1600" height="520" rx="32" fill="url(#surface)"/>
+  <rect width="1600" height="520" rx="32" fill="url(#grid)"/>
+  <rect width="1600" height="520" rx="32" fill="url(#glowMint)"/>
+  <rect width="1600" height="520" rx="32" fill="url(#glowAmber)"/>
+
+  <circle cx="1277" cy="266" r="173" fill="#60c39b" fill-opacity=".08"/>
+  <circle cx="1277" cy="266" r="211" stroke="#8bd5b3" stroke-opacity=".12"/>
+  <circle cx="1277" cy="266" r="248" stroke="#8bd5b3" stroke-opacity=".07"/>
+
+  <rect x="86" y="76" width="54" height="54" rx="16" fill="#242c29" stroke="#ffffff" stroke-opacity=".08"/>
+  <path d="M104 92h19a3 3 0 0 1 3 3v25h-22a3 3 0 0 1-3-3V95a3 3 0 0 1 3-3Z" stroke="url(#amber)" stroke-width="2.8" stroke-linejoin="round"/>
+  <path d="m107 106 4 4 8-9" stroke="url(#amber)" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="158" y="100" fill="#f4f6f4" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="18" font-weight="750" letter-spacing=".4">SAMS V2</text>
+  <text x="158" y="122" fill="#9ba8a1" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="11" font-weight="700" letter-spacing="2.1">OPEN ACADEMIC WORKSPACE</text>
+
+  <rect x="88" y="173" width="233" height="34" rx="17" fill="#18231f" stroke="#8bd5b3" stroke-opacity=".18"/>
+  <circle cx="108" cy="190" r="4" fill="#80d4aa"/>
+  <text x="123" y="194" fill="#9fe0bd" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="11" font-weight="700" letter-spacing="1.55">BUILT FOR ACADEMIC LIFE</text>
+
+  <text x="86" y="274" fill="#f7f8f7" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="52" font-weight="650" letter-spacing="-2.1">Academic operations,</text>
+  <text x="86" y="333" fill="#f7f8f7" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="52" font-weight="650" letter-spacing="-2.1">clearly organized.</text>
+  <text x="89" y="382" fill="#a9b2ad" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="17" font-weight="450">One workspace for students, faculty, and administrators.</text>
+
+  <rect x="88" y="423" width="126" height="39" rx="19.5" fill="#1b2521" stroke="#7cc9a0" stroke-opacity=".35"/>
+  <circle cx="108" cy="442.5" r="4" fill="#7cc9a0"/>
+  <text x="121" y="447" fill="#d6e9df" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="12" font-weight="600">Student</text>
+  <rect x="226" y="423" width="126" height="39" rx="19.5" fill="#1b2521" stroke="#7cc9a0" stroke-opacity=".35"/>
+  <circle cx="246" cy="442.5" r="4" fill="#7cc9a0"/>
+  <text x="259" y="447" fill="#d6e9df" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="12" font-weight="600">Faculty</text>
+  <rect x="364" y="423" width="158" height="39" rx="19.5" fill="#1b2521" stroke="#7cc9a0" stroke-opacity=".35"/>
+  <circle cx="384" cy="442.5" r="4" fill="#7cc9a0"/>
+  <text x="397" y="447" fill="#d6e9df" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="12" font-weight="600">Administrator</text>
+
+  <rect x="742" y="73" width="757" height="375" rx="24" fill="#080b0a" fill-opacity=".56" filter="url(#shadow)"/>
+  <rect x="744" y="62" width="752" height="374" rx="24" fill="#111615" stroke="#d2e8dc" stroke-opacity=".16"/>
+  <path d="M744 87a25 25 0 0 1 25-25h702a25 25 0 0 1 25 25v37H744V87Z" fill="#171e1b"/>
+  <path d="M744 124h752" stroke="#ffffff" stroke-opacity=".08"/>
+  <circle cx="775" cy="94" r="5" fill="#f08b4b"/>
+  <circle cx="793" cy="94" r="5" fill="#e1bd67"/>
+  <circle cx="811" cy="94" r="5" fill="#70c99b"/>
+  <text x="853" y="98" fill="#d8e0db" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="12" font-weight="650" letter-spacing=".8">SAMS · ATTENDANCE WORKSPACE</text>
+  <rect x="1382" y="78" width="91" height="29" rx="14.5" fill="#1b2c24" stroke="#7cc9a0" stroke-opacity=".28"/>
+  <circle cx="1400" cy="92.5" r="4" fill="#7cc9a0"/>
+  <text x="1412" y="97" fill="#a3ddbd" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="10" font-weight="700" letter-spacing=".75">SYNTHETIC</text>
+
+  <rect x="777" y="152" width="266" height="249" rx="17" fill="#171d1a" stroke="#ffffff" stroke-opacity=".075"/>
+  <text x="800" y="183" fill="#9ca9a2" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="10" font-weight="700" letter-spacing="1.45">COURSE SESSION</text>
+  <text x="800" y="212" fill="#edf2ee" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="17" font-weight="650">Electronic Circuits</text>
+  <text x="800" y="234" fill="#919c96" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="12">Section A · Enrolled class</text>
+  <path d="M800 257h220" stroke="#ffffff" stroke-opacity=".08"/>
+  <text x="800" y="283" fill="#9ca9a2" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="10" font-weight="700" letter-spacing="1.35">ATTENDANCE ROSTER</text>
+  <circle cx="811" cy="313" r="13" fill="#23352c"/>
+  <circle cx="811" cy="313" r="4" fill="#7cc9a0"/>
+  <rect x="835" y="306" width="116" height="7" rx="3.5" fill="#dbe4de" fill-opacity=".88"/>
+  <rect x="835" y="319" width="79" height="5" rx="2.5" fill="#87938c" fill-opacity=".65"/>
+  <rect x="973" y="306" width="47" height="22" rx="11" fill="#183026"/>
+  <text x="985" y="321" fill="#81d5a8" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="9" font-weight="700">PRESENT</text>
+  <circle cx="811" cy="356" r="13" fill="#23352c"/>
+  <circle cx="811" cy="356" r="4" fill="#7cc9a0"/>
+  <rect x="835" y="349" width="140" height="7" rx="3.5" fill="#dbe4de" fill-opacity=".88"/>
+  <rect x="835" y="362" width="98" height="5" rx="2.5" fill="#87938c" fill-opacity=".65"/>
+
+  <rect x="1062" y="152" width="400" height="249" rx="17" fill="#171d1a" stroke="#ffffff" stroke-opacity=".075"/>
+  <text x="1087" y="183" fill="#9ca9a2" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="10" font-weight="700" letter-spacing="1.45">ROTATING CHECK-IN CODE</text>
+  <text x="1087" y="213" fill="#edf2ee" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="17" font-weight="650">Scan to check in</text>
+  <rect x="1087" y="233" width="152" height="152" rx="13" fill="#f2f4f0"/>
+  <g fill="#13231c">
+    <path d="M1101 247h42v42h-42zM1108 254v28h28v-28zM1114 260h16v16h-16z"/>
+    <path d="M1183 247h42v42h-42zM1190 254v28h28v-28zM1196 260h16v16h-16z"/>
+    <path d="M1101 329h42v42h-42zM1108 336v28h28v-28zM1114 342h16v16h-16z"/>
+    <path d="M1152 247h8v8h-8zM1168 247h8v8h-8zM1152 263h8v8h-8zM1168 279h8v8h-8zM1152 295h8v8h-8zM1168 311h8v8h-8zM1152 327h8v8h-8zM1168 343h8v8h-8zM1184 303h8v8h-8zM1200 303h8v8h-8zM1216 303h8v8h-8zM1184 319h8v8h-8zM1200 335h8v8h-8zM1216 351h8v8h-8zM1184 367h8v8h-8zM1200 367h8v8h-8zM1216 367h8v8h-8zM1101 295h8v8h-8zM1117 303h8v8h-8zM1133 295h8v8h-8zM1149 375h8v8h-8z"/>
+  </g>
+  <rect x="1260" y="248" width="174" height="42" rx="12" fill="#1c2922" stroke="#7cc9a0" stroke-opacity=".18"/>
+  <circle cx="1281" cy="269" r="5" fill="#7cc9a0"/>
+  <text x="1297" y="273" fill="#dce9e0" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="12" font-weight="600">Updates every 10s</text>
+  <rect x="1260" y="304" width="174" height="42" rx="12" fill="#1c2020" stroke="#ffffff" stroke-opacity=".07"/>
+  <path d="M1280 318v13m-6.5-6.5h13" stroke="#f39a5f" stroke-width="2" stroke-linecap="round"/>
+  <text x="1297" y="330" fill="#c8d0cb" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="12" font-weight="600">One check-in per session</text>
+
+  <rect x="1117" y="413" width="302" height="53" rx="15" fill="#17241d" stroke="#7cc9a0" stroke-opacity=".18"/>
+  <circle cx="1144" cy="439.5" r="12" fill="#21372b"/>
+  <path d="m1139 440 3.5 3.5 7-8" stroke="#8bd5b3" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="1168" y="437" fill="#e2ece5" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="11" font-weight="650">Access checked in the database</text>
+  <text x="1168" y="453" fill="#93a49a" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="10">Role · enrollment · session window</text>
+</svg>
