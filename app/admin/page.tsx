@@ -158,6 +158,15 @@ export default async function AdminDashboard({
   const profileById = new Map(
     (memberProfiles ?? []).map((row) => [row.id, row.display_name]),
   );
+  const getMemberOptions = (role: "faculty" | "student") =>
+    (memberships ?? [])
+      .filter((item) => item.role === role && item.status === "active")
+      .map((item) => ({
+        id: item.user_id,
+        label: `${profileById.get(item.user_id) ?? "Unnamed member"} · ${item.user_id.slice(0, 8)}`,
+      }));
+  const facultyOptions = getMemberOptions("faculty");
+  const studentOptions = getMemberOptions("student");
   const courseById = new Map((courses ?? []).map((row) => [row.id, row]));
   const result = typeof query.result === "string" ? query.result : "";
 
@@ -348,13 +357,13 @@ export default async function AdminDashboard({
                   Assignments and enrollments
                 </h2>
                 <p className="mt-1 text-xs text-[#a1a1a1]">
-                  Use an existing member’s user ID from the roster below.
+                  Choose an active member from this institution.
                 </p>
               </div>
               <div className="grid gap-4 md:grid-cols-2">
                 <Panel
                   title="Assign faculty"
-                  description="Only an active faculty membership can be assigned."
+                  description="Choose from active faculty memberships."
                 >
                   <form action={assignFaculty} className="mt-4 space-y-3">
                     <SelectField
@@ -366,10 +375,15 @@ export default async function AdminDashboard({
                         label: `${courseById.get(s.course_id)?.code ?? "Course"} · ${s.section_code}`,
                       }))}
                     />
-                    <Field
-                      label="Faculty user ID"
+                    <SelectField
+                      label="Faculty member"
                       name="faculty_user_id"
-                      placeholder="UUID from the member roster"
+                      placeholder={
+                        facultyOptions.length
+                          ? "Choose a faculty member"
+                          : "No active faculty members"
+                      }
+                      items={facultyOptions}
                     />
                     <button
                       className="button !min-h-9 !text-[11px]"
@@ -381,7 +395,7 @@ export default async function AdminDashboard({
                 </Panel>
                 <Panel
                   title="Enroll student"
-                  description="Only an active student membership can be enrolled."
+                  description="Choose from active student memberships."
                 >
                   <form action={enrollStudent} className="mt-4 space-y-3">
                     <SelectField
@@ -393,10 +407,15 @@ export default async function AdminDashboard({
                         label: `${courseById.get(s.course_id)?.code ?? "Course"} · ${s.section_code}`,
                       }))}
                     />
-                    <Field
-                      label="Student user ID"
+                    <SelectField
+                      label="Student member"
                       name="student_user_id"
-                      placeholder="UUID from the member roster"
+                      placeholder={
+                        studentOptions.length
+                          ? "Choose a student"
+                          : "No active students"
+                      }
+                      items={studentOptions}
                     />
                     <button
                       className="button !min-h-9 !text-[11px]"
