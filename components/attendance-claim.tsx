@@ -4,32 +4,38 @@ import Link from "next/link";
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { Brand } from "@/components/brand";
 
-let latchedToken = "";
-let activeMounts = 0;
-
-function subscribeToHash(callback: () => void) {
-  window.addEventListener("hashchange", callback);
-  return () => window.removeEventListener("hashchange", callback);
+function readHashToken() {
+  return new URLSearchParams(window.location.hash.slice(1)).get("token") ?? "";
 }
 
-function readTokenFromHash() {
-  const fromHash =
-    new URLSearchParams(window.location.hash.slice(1)).get("token") ?? "";
-  if (fromHash) {
-    latchedToken = fromHash;
-  }
-  return latchedToken;
-}
+function createTokenStore() {
+  let token: string | undefined;
 
-function getServerToken() {
-  return "";
+  return {
+    subscribe(callback: () => void) {
+      const handleHashChange = () => {
+        token = readHashToken();
+        callback();
+      };
+      window.addEventListener("hashchange", handleHashChange);
+      return () => window.removeEventListener("hashchange", handleHashChange);
+    },
+    getSnapshot() {
+      token ??= readHashToken();
+      return token;
+    },
+    getServerSnapshot() {
+      return "";
+    },
+  };
 }
 
 export function AttendanceClaim() {
+  const [tokenStore] = useState(createTokenStore);
   const token = useSyncExternalStore(
-    subscribeToHash,
-    readTokenFromHash,
-    getServerToken,
+    tokenStore.subscribe,
+    tokenStore.getSnapshot,
+    tokenStore.getServerSnapshot,
   );
   const [state, setState] = useState("Checking your attendance session…");
   const [kind, setKind] = useState<"busy" | "success" | "error" | "signin">(
@@ -37,16 +43,13 @@ export function AttendanceClaim() {
   );
 
   useEffect(() => {
-    activeMounts += 1;
-    return () => {
-      activeMounts -= 1;
-      window.setTimeout(() => {
-        if (activeMounts === 0) {
-          latchedToken = "";
-        }
-      }, 0);
-    };
-  }, []);
+    if (!token) return;
+    window.history.replaceState(
+      null,
+      "",
+      `${window.location.pathname}${window.location.search}`,
+    );
+  }, [token]);
 
   useEffect(() => {
     if (!token) return;
