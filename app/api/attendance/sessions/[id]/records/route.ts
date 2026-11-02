@@ -18,7 +18,14 @@ export async function GET(
     { p_session_id: id },
   );
   const snapshot = snapshots?.[0];
-  if (error || !snapshot)
+  if (error?.code === "42501")
+    return NextResponse.json({ error: "not_available" }, { status: 404 });
+  if (error)
+    return NextResponse.json(
+      { error: "temporarily_unavailable" },
+      { status: 503, headers: { "Cache-Control": "no-store" } },
+    );
+  if (!snapshot)
     return NextResponse.json({ error: "not_available" }, { status: 404 });
   const records = Array.isArray(snapshot.records) ? snapshot.records : [];
   return NextResponse.json(

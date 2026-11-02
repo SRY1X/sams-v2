@@ -38,10 +38,18 @@ export async function POST(request: NextRequest) {
   const parsed = bodySchema.safeParse(payload);
   if (!parsed.success)
     return respond({ error: "This QR code is invalid or expired." }, 400);
-  const { ATTENDANCE_TOKEN_SECRET } = getServerEnv();
+  let attendanceTokenSecret: string;
+  try {
+    attendanceTokenSecret = getServerEnv().ATTENDANCE_TOKEN_SECRET;
+  } catch {
+    return respond(
+      { error: "Attendance is temporarily unavailable. Try again." },
+      503,
+    );
+  }
   const claims = verifyAttendanceToken(
     parsed.data.token,
-    ATTENDANCE_TOKEN_SECRET,
+    attendanceTokenSecret,
   );
   if (!claims)
     return respond({ error: "This QR code is invalid or expired." }, 400);
@@ -52,16 +60,23 @@ export async function POST(request: NextRequest) {
   });
   databaseDuration = performance.now() - databaseStartedAt;
   if (error) {
-    const denied = error.code === "42501";
+    if (error.code === "42501")
+      return respond({ error: "You are not enrolled in this class." }, 403);
+    if (error.code === "55000")
+      return respond(
+        { error: "This attendance session is no longer active." },
+        400,
+      );
     return respond(
-      {
-        error: denied
-          ? "You are not enrolled in this class."
-          : "This attendance session is no longer active.",
-      },
-      denied ? 403 : 400,
+      { error: "Attendance is temporarily unavailable. Try again." },
+      503,
     );
   }
+  if (!data)
+    return respond(
+      { error: "Attendance is temporarily unavailable. Try again." },
+      503,
+    );
   return respond(
     { status: data === "already_recorded" ? "already_recorded" : "recorded" },
     200,

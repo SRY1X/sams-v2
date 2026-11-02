@@ -23,15 +23,23 @@ const siteOriginSchema = z
     );
   }, "Expected an HTTPS site origin (HTTP is allowed only for local development on localhost).")
   .transform((value) => new URL(value).origin);
+const institutionIdSchema = z.uuid();
 
 const schema = z.object({
   NEXT_PUBLIC_SUPABASE_URL: z.string().url(),
   NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: z.string().min(1),
   ATTENDANCE_TOKEN_SECRET: z.string().min(32),
+  SAMS_INSTITUTION_ID: institutionIdSchema,
 });
 
 export function getServerEnv() {
   return schema.parse(process.env);
+}
+
+/** Returns the configured institution boundary, or null while setup is incomplete. */
+export function getConfiguredInstitutionId() {
+  const parsed = institutionIdSchema.safeParse(process.env.SAMS_INSTITUTION_ID);
+  return parsed.success ? parsed.data : null;
 }
 
 /**

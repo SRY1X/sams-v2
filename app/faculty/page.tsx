@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { AppHeader } from "@/components/app-header";
 import { AttendanceQr } from "@/components/attendance-qr";
 import { LiveAttendanceList } from "@/components/live-attendance-list";
@@ -7,6 +8,7 @@ import {
   startAttendanceSession,
 } from "@/lib/attendance/actions";
 import { requireMembership } from "@/lib/auth/session";
+import { requireSupabaseData } from "@/lib/supabase/errors";
 
 export default async function FacultyDashboard({
   searchParams,
@@ -15,7 +17,7 @@ export default async function FacultyDashboard({
 }) {
   const member = await requireMembership("faculty");
   const query = await searchParams;
-  const [{ data: profile }, { data: institution }, { data: assignments }] =
+  const [profileResult, institutionResult, assignmentsResult] =
     await Promise.all([
       member.supabase
         .from("profiles")
@@ -30,49 +32,83 @@ export default async function FacultyDashboard({
       member.supabase
         .from("section_faculty")
         .select("section_id")
+        .eq("institution_id", member.institution_id)
         .eq("faculty_user_id", member.user_id),
     ]);
+  const profile = requireSupabaseData(profileResult, "faculty profile");
+  const institution = requireSupabaseData(
+    institutionResult,
+    "institution details",
+  );
+  const assignments = requireSupabaseData(
+    assignmentsResult,
+    "faculty assignment list",
+  );
   const sectionIds = (assignments ?? []).map((row) => row.section_id);
-  const { data: sections } = sectionIds.length
-    ? await member.supabase
-        .from("course_sections")
-        .select("id,course_id,term_id,section_code")
-        .in("id", sectionIds)
-    : { data: [] };
+  const sections = sectionIds.length
+    ? requireSupabaseData(
+        await member.supabase
+          .from("course_sections")
+          .select("id,course_id,term_id,section_code")
+          .in("id", sectionIds),
+        "assigned section list",
+      )
+    : [];
   const courseIds = [...new Set((sections ?? []).map((row) => row.course_id))];
   const termIds = [...new Set((sections ?? []).map((row) => row.term_id))];
-  const [{ data: courses }, { data: terms }, { data: enrollments }] =
+  const nowIso = new Date().toISOString();
+  const [coursesResult, termsResult, enrollmentsResult, openSessionsResult] =
     await Promise.all([
       courseIds.length
         ? member.supabase
             .from("courses")
             .select("id,code,title")
             .in("id", courseIds)
-        : Promise.resolve({ data: [] }),
+        : Promise.resolve({ data: [], error: null }),
       termIds.length
         ? member.supabase
             .from("academic_terms")
             .select("id,name")
             .in("id", termIds)
-        : Promise.resolve({ data: [] }),
+        : Promise.resolve({ data: [], error: null }),
       sectionIds.length
         ? member.supabase
             .from("enrollments")
             .select("section_id,student_user_id")
             .in("section_id", sectionIds)
             .eq("status", "active")
-        : Promise.resolve({ data: [] }),
+        : Promise.resolve({ data: [], error: null }),
+      sectionIds.length
+        ? member.supabase
+            .from("attendance_sessions")
+            .select("id,section_id,status,expires_at,starts_at")
+            .in("section_id", sectionIds)
+            .eq("status", "open")
+            .gt("expires_at", nowIso)
+            .order("starts_at", { ascending: false })
+        : Promise.resolve({ data: [], error: null }),
     ]);
+  const courses = requireSupabaseData(coursesResult, "assigned course list");
+  const terms = requireSupabaseData(termsResult, "assigned term list");
+  const enrollments = requireSupabaseData(
+    enrollmentsResult,
+    "section enrollment list",
+  );
+  const openSessions = requireSupabaseData(
+    openSessionsResult,
+    "active attendance session list",
+  );
   const courseMap = new Map((courses ?? []).map((row) => [row.id, row]));
   const termMap = new Map((terms ?? []).map((row) => [row.id, row.name]));
+  const openSessionBySection = new Map(
+    (openSessions ?? []).map((row) => [row.section_id, row]),
+  );
   const selectedId = typeof query.session === "string" ? query.session : "";
-  const { data: activeSession } = selectedId
-    ? await member.supabase
-        .from("attendance_sessions")
-        .select("id,section_id,status,expires_at,starts_at")
-        .eq("id", selectedId)
-        .maybeSingle()
-    : { data: null };
+  const activeSession = query.closed
+    ? null
+    : ((openSessions ?? []).find((row) => row.id === selectedId) ??
+      openSessions?.[0] ??
+      null);
   const selectedSection = activeSession
     ? (sections ?? []).find((row) => row.id === activeSession.section_id)
     : undefined;
@@ -172,6 +208,7 @@ export default async function FacultyDashboard({
           <div className="grid gap-4 md:grid-cols-2">
             {sections?.map((section) => {
               const course = courseMap.get(section.course_id);
+              const openSession = openSessionBySection.get(section.id);
               return (
                 <article key={section.id} className="surface p-5">
                   <div className="flex items-start justify-between gap-4">
@@ -196,19 +233,30 @@ export default async function FacultyDashboard({
                     <p className="text-[10px] text-[#a1a1a1]">
                       {termMap.get(section.term_id) ?? "Academic term"}
                     </p>
-                    <form action={startAttendanceSession}>
-                      <input
-                        type="hidden"
-                        name="section_id"
-                        value={section.id}
-                      />
-                      <button
-                        className="button !min-h-9 !px-3 !text-[11px]"
-                        type="submit"
+                    {openSession ? (
+                      <Link
+                        className="button secondary !min-h-9 !px-3 !text-[11px]"
+                        href={`/faculty?session=${openSession.id}`}
                       >
-                        Start attendance <span aria-hidden="true">→</span>
-                      </button>
-                    </form>
+                        {activeSession?.id === openSession.id
+                          ? "Session active"
+                          : "View live QR →"}
+                      </Link>
+                    ) : (
+                      <form action={startAttendanceSession}>
+                        <input
+                          type="hidden"
+                          name="section_id"
+                          value={section.id}
+                        />
+                        <button
+                          className="button !min-h-9 !px-3 !text-[11px]"
+                          type="submit"
+                        >
+                          Start attendance <span aria-hidden="true">→</span>
+                        </button>
+                      </form>
+                    )}
                   </div>
                 </article>
               );

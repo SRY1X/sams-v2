@@ -2,86 +2,113 @@ import Link from "next/link";
 import { AppHeader } from "@/components/app-header";
 import { formatInstitutionDateTime } from "@/lib/config/format";
 import { requireMembership } from "@/lib/auth/session";
+import { requireSupabaseData } from "@/lib/supabase/errors";
 
 export default async function StudentDashboard() {
   const member = await requireMembership("student");
-  const { data: profile } = await member.supabase
-    .from("profiles")
-    .select("display_name")
-    .eq("id", member.user_id)
-    .maybeSingle();
-  const { data: institution } = await member.supabase
-    .from("institutions")
-    .select("timezone")
-    .eq("id", member.institution_id)
-    .maybeSingle();
-  const { data: enrollments } = await member.supabase
-    .from("enrollments")
-    .select("section_id,status")
-    .eq("student_user_id", member.user_id)
-    .eq("status", "active");
+  const [profileResult, institutionResult, enrollmentsResult] =
+    await Promise.all([
+      member.supabase
+        .from("profiles")
+        .select("display_name")
+        .eq("id", member.user_id)
+        .maybeSingle(),
+      member.supabase
+        .from("institutions")
+        .select("timezone")
+        .eq("id", member.institution_id)
+        .maybeSingle(),
+      member.supabase
+        .from("enrollments")
+        .select("section_id,status")
+        .eq("student_user_id", member.user_id)
+        .eq("status", "active"),
+    ]);
+  const profile = requireSupabaseData(profileResult, "student profile");
+  const institution = requireSupabaseData(
+    institutionResult,
+    "institution details",
+  );
+  const enrollments = requireSupabaseData(
+    enrollmentsResult,
+    "student enrollment list",
+  );
   const sectionIds = (enrollments ?? []).map((row) => row.section_id);
-  const { data: sections } = sectionIds.length
-    ? await member.supabase
-        .from("course_sections")
-        .select("id,course_id,term_id,section_code")
-        .in("id", sectionIds)
-    : { data: [] };
+  const sections = sectionIds.length
+    ? requireSupabaseData(
+        await member.supabase
+          .from("course_sections")
+          .select("id,course_id,term_id,section_code")
+          .in("id", sectionIds),
+        "student section list",
+      )
+    : [];
   const courseIds = [...new Set((sections ?? []).map((row) => row.course_id))];
   const termIds = [...new Set((sections ?? []).map((row) => row.term_id))];
-  const [{ data: courses }, { data: terms }, { data: records }] =
-    await Promise.all([
-      courseIds.length
-        ? member.supabase
-            .from("courses")
-            .select("id,code,title")
-            .in("id", courseIds)
-        : Promise.resolve({ data: [] }),
-      termIds.length
-        ? member.supabase
-            .from("academic_terms")
-            .select("id,name")
-            .in("id", termIds)
-        : Promise.resolve({ data: [] }),
-      member.supabase
-        .from("attendance_records")
-        .select("session_id,recorded_at,status")
-        .eq("student_user_id", member.user_id)
-        .order("recorded_at", { ascending: false })
-        .limit(8),
-    ]);
+  const [coursesResult, termsResult, recordsResult] = await Promise.all([
+    courseIds.length
+      ? member.supabase
+          .from("courses")
+          .select("id,code,title")
+          .in("id", courseIds)
+      : Promise.resolve({ data: [], error: null }),
+    termIds.length
+      ? member.supabase
+          .from("academic_terms")
+          .select("id,name")
+          .in("id", termIds)
+      : Promise.resolve({ data: [], error: null }),
+    member.supabase
+      .from("attendance_records")
+      .select("session_id,recorded_at,status")
+      .eq("student_user_id", member.user_id)
+      .order("recorded_at", { ascending: false })
+      .limit(8),
+  ]);
+  const courses = requireSupabaseData(coursesResult, "student course list");
+  const terms = requireSupabaseData(termsResult, "student term list");
+  const records = requireSupabaseData(recordsResult, "student attendance list");
   const sessionIds = [...new Set((records ?? []).map((row) => row.session_id))];
-  const { data: sessions } = sessionIds.length
-    ? await member.supabase
-        .from("attendance_sessions")
-        .select("id,section_id,starts_at")
-        .in("id", sessionIds)
-    : { data: [] };
+  const sessions = sessionIds.length
+    ? requireSupabaseData(
+        await member.supabase
+          .from("attendance_sessions")
+          .select("id,section_id,starts_at")
+          .in("id", sessionIds),
+        "attendance session list",
+      )
+    : [];
   const historySectionIds = [
     ...new Set((sessions ?? []).map((row) => row.section_id)),
   ];
   const historySections = historySectionIds.length
-    ? await member.supabase
-        .from("course_sections")
-        .select("id,course_id,section_code")
-        .in("id", historySectionIds)
-    : { data: [] };
+    ? requireSupabaseData(
+        await member.supabase
+          .from("course_sections")
+          .select("id,course_id,section_code")
+          .in("id", historySectionIds),
+        "attendance history section list",
+      )
+    : [];
   const historyCourseIds = [
-    ...new Set((historySections.data ?? []).map((row) => row.course_id)),
+    ...new Set((historySections ?? []).map((row) => row.course_id)),
   ];
-  const { data: historyCourses } = historyCourseIds.length
-    ? await member.supabase
-        .from("courses")
-        .select("id,code,title")
-        .in("id", historyCourseIds)
-    : { data: [] };
+  const historyCourses = historyCourseIds.length
+    ? requireSupabaseData(
+        await member.supabase
+          .from("courses")
+          .select("id,code,title")
+          .in("id", historyCourseIds),
+        "attendance history course list",
+      )
+    : [];
   const courseById = new Map(
     [...(courses ?? []), ...(historyCourses ?? [])].map((row) => [row.id, row]),
   );
   const termById = new Map((terms ?? []).map((row) => [row.id, row.name]));
   const sessionById = new Map((sessions ?? []).map((row) => [row.id, row]));
   const historySectionById = new Map(
-    (historySections.data ?? []).map((row) => [row.id, row]),
+    (historySections ?? []).map((row) => [row.id, row]),
   );
   const sectionCards = sections ?? [];
   const presentCount = records?.length ?? 0;

@@ -145,8 +145,9 @@ export async function setMembershipStatus(form: FormData) {
 }
 
 /**
- * Requires an institution admin, invites a student or faculty member, and creates their membership.
- * Deletes the invited Auth user if membership creation fails, then redirects with the outcome.
+ * Requires an institution admin, invites a student or faculty member, and
+ * creates the membership plus audit event in one database transaction.
+ * Deletes the invited Auth user if the transactional database operation fails.
  */
 export async function inviteMember(form: FormData) {
   const member = await requireMembership("admin");
@@ -188,24 +189,35 @@ export async function inviteMember(form: FormData) {
     });
   if (inviteError || !invite.user) finishAdmin("invite-failed");
   const role = parsed.data.role as Extract<Role, "student" | "faculty">;
-  const { error: membershipError } = await adminClient
-    .from("institution_memberships")
-    .insert({
-      institution_id: member.institution_id,
-      user_id: invite.user.id,
-      role,
-      status: "active",
+  const { data: membershipId, error: membershipError } =
+    await member.supabase.rpc("create_invited_membership", {
+      p_institution_id: member.institution_id,
+      p_user_id: invite.user.id,
+      p_role: role,
     });
-  if (membershipError) {
-    await adminClient.auth.admin.deleteUser(invite.user.id);
+  if (membershipError || !membershipId) {
+    try {
+      const { error: cleanupError } = await adminClient.auth.admin.deleteUser(
+        invite.user.id,
+      );
+      if (cleanupError) {
+        // Cleanup is best effort because Auth and PostgreSQL are separate
+        // services and cannot share the transaction boundary.
+        console.error(
+          "Invite cleanup failed; an orphaned Auth user may remain.",
+          {
+            userId: invite.user.id,
+            message: cleanupError.message,
+          },
+        );
+      }
+    } catch {
+      // Keep the user-facing result generic if Auth cleanup also fails.
+      console.error("Invite cleanup threw; an orphaned Auth user may remain.", {
+        userId: invite.user.id,
+      });
+    }
     finishAdmin("invite-failed");
   }
-  await adminClient.from("audit_events").insert({
-    institution_id: member.institution_id,
-    actor_id: member.user_id,
-    action: "membership.invited",
-    entity_type: "institution_membership",
-    details: { role },
-  });
   finishAdmin("invited");
 }

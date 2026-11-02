@@ -76,12 +76,13 @@ One user can have one role per institution. Creating an Auth account alone does 
 
 Import the repository into Vercel. Configure the required values under **Project → Settings → Environment Variables**:
 
-| Variable                               | Where to get it                                       |
-| -------------------------------------- | ----------------------------------------------------- |
-| `NEXT_PUBLIC_SUPABASE_URL`             | Supabase → Project Settings → API                     |
-| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Supabase → Project Settings → API → Publishable key   |
-| `ATTENDANCE_TOKEN_SECRET`              | Generate a unique random value with the command below |
-| `NEXT_PUBLIC_SITE_URL`                 | The exact HTTPS URL assigned to the Vercel deployment |
+| Variable                               | Where to get it                                                                          |
+| -------------------------------------- | ---------------------------------------------------------------------------------------- |
+| `NEXT_PUBLIC_SUPABASE_URL`             | Supabase → Project Settings → API                                                        |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Supabase → Project Settings → API → Publishable key                                      |
+| `SAMS_INSTITUTION_ID`                  | The institution UUID from the migration, normally `00000000-0000-4000-8000-000000000001` |
+| `ATTENDANCE_TOKEN_SECRET`              | Generate a unique random value with the command below                                    |
+| `NEXT_PUBLIC_SITE_URL`                 | The exact HTTPS URL assigned to the Vercel deployment                                    |
 
 ```sh
 node -e "console.log(require('node:crypto').randomBytes(48).toString('base64url'))"
