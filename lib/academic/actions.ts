@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
+import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
@@ -182,12 +183,20 @@ export async function inviteMember(form: FormData) {
       auth: { autoRefreshToken: false, persistSession: false },
     },
   );
+  const inviteMarker = randomUUID();
   const { data: invite, error: inviteError } =
     await adminClient.auth.admin.inviteUserByEmail(parsed.data.email, {
-      data: { full_name: parsed.data.display_name },
+      data: {
+        full_name: parsed.data.display_name,
+        sams_invite_marker: inviteMarker,
+      },
       redirectTo: `${siteOrigin}/auth/callback`,
     });
   if (inviteError || !invite.user) finishAdmin("invite-failed");
+  // Re-inviting an existing unconfirmed user preserves its metadata, so this
+  // fresh marker proves that the Auth user was created by this invocation.
+  const createdByThisInvocation =
+    invite.user.user_metadata?.sams_invite_marker === inviteMarker;
   const role = parsed.data.role as Extract<Role, "student" | "faculty">;
   const { data: membershipId, error: membershipError } =
     await member.supabase.rpc("create_invited_membership", {
@@ -196,26 +205,31 @@ export async function inviteMember(form: FormData) {
       p_role: role,
     });
   if (membershipError || !membershipId) {
-    try {
-      const { error: cleanupError } = await adminClient.auth.admin.deleteUser(
-        invite.user.id,
-      );
-      if (cleanupError) {
-        // Cleanup is best effort because Auth and PostgreSQL are separate
-        // services and cannot share the transaction boundary.
+    if (createdByThisInvocation) {
+      try {
+        const { error: cleanupError } = await adminClient.auth.admin.deleteUser(
+          invite.user.id,
+        );
+        if (cleanupError) {
+          // Cleanup is best effort because Auth and PostgreSQL are separate
+          // services and cannot share the transaction boundary.
+          console.error(
+            "Invite cleanup failed; an orphaned Auth user may remain.",
+            {
+              userId: invite.user.id,
+              message: cleanupError.message,
+            },
+          );
+        }
+      } catch {
+        // Keep the user-facing result generic if Auth cleanup also fails.
         console.error(
-          "Invite cleanup failed; an orphaned Auth user may remain.",
+          "Invite cleanup threw; an orphaned Auth user may remain.",
           {
             userId: invite.user.id,
-            message: cleanupError.message,
           },
         );
       }
-    } catch {
-      // Keep the user-facing result generic if Auth cleanup also fails.
-      console.error("Invite cleanup threw; an orphaned Auth user may remain.", {
-        userId: invite.user.id,
-      });
     }
     finishAdmin("invite-failed");
   }
