@@ -203,9 +203,19 @@ export async function inviteMember(form: FormData) {
       if (cleanupError) {
         // Cleanup is best effort because Auth and PostgreSQL are separate
         // services and cannot share the transaction boundary.
+        console.error(
+          "Invite cleanup failed; an orphaned Auth user may remain.",
+          {
+            userId: invite.user.id,
+            message: cleanupError.message,
+          },
+        );
       }
     } catch {
       // Keep the user-facing result generic if Auth cleanup also fails.
+      console.error("Invite cleanup threw; an orphaned Auth user may remain.", {
+        userId: invite.user.id,
+      });
     }
     finishAdmin("invite-failed");
   }
