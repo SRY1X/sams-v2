@@ -13,7 +13,7 @@ The recommended contributor flow runs the Next.js app locally but connects it to
 
    On macOS or Linux, use `cp .env.example .env.local`.
 
-3. In `.env.local`, set the URL and publishable key from your own non-production Supabase project. Generate a separate `ATTENDANCE_TOKEN_SECRET` and set `NEXT_PUBLIC_SITE_URL=http://localhost:3000`. Do not paste service-role keys, passwords, or Vercel OIDC tokens into public files or screenshots. See [environment configuration](environment.md).
+3. In `.env.local`, set the URL and publishable key from your own non-production Supabase project, set `SAMS_INSTITUTION_ID` to the institution UUID in that project, generate a separate `ATTENDANCE_TOKEN_SECRET`, and set `NEXT_PUBLIC_SITE_URL=http://localhost:3000`. Do not paste service-role keys, passwords, or Vercel OIDC tokens into public files or screenshots. See [environment configuration](environment.md).
 4. Start the Next.js app:
 
    ```sh

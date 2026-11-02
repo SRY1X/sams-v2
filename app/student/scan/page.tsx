@@ -2,14 +2,18 @@ import Link from "next/link";
 import { AttendanceScanner } from "@/components/attendance-scanner";
 import { AppHeader } from "@/components/app-header";
 import { requireMembership } from "@/lib/auth/session";
+import { requireSupabaseData } from "@/lib/supabase/errors";
 
 export default async function StudentScanPage() {
   const member = await requireMembership("student");
-  const { data: profile } = await member.supabase
-    .from("profiles")
-    .select("display_name")
-    .eq("id", member.user_id)
-    .maybeSingle();
+  const profile = requireSupabaseData(
+    await member.supabase
+      .from("profiles")
+      .select("display_name")
+      .eq("id", member.user_id)
+      .maybeSingle(),
+    "student profile",
+  );
 
   return (
     <>

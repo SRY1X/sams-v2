@@ -34,11 +34,12 @@ This guide deploys the Next.js app to Vercel and connects it to one institution'
    | -------------------------------------- | ---------------------------------------------------------- | ----------------------------------------- |
    | `NEXT_PUBLIC_SUPABASE_URL`             | Staging Supabase project URL                               | Production Supabase project URL           |
    | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Staging publishable key                                    | Production publishable key                |
+   | `SAMS_INSTITUTION_ID`                  | Staging institution UUID                                   | Production institution UUID               |
    | `ATTENDANCE_TOKEN_SECRET`              | Unique random secret                                       | Different unique random secret            |
    | `NEXT_PUBLIC_SITE_URL`                 | Optional; otherwise uses the generated Vercel HTTPS origin | Canonical production HTTPS origin         |
    | `SUPABASE_SERVICE_ROLE_KEY`            | Optional; only if testing invitations                      | Optional; only if invitations are enabled |
 
-   Manual Auth account creation does not require the service-role key. If you enable invitation support, keep it server-only and never use it for ordinary user requests.
+   Manual Auth account creation does not require the service-role key. If you enable invitation support, keep it server-only and never use it for ordinary user requests. The application uses `SAMS_INSTITUTION_ID` as the deployment boundary when a user has memberships in multiple institutions.
 
 5. Generate a separate token-signing key for each environment:
 

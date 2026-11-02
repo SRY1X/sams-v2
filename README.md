@@ -187,12 +187,13 @@ In Vercel, select **Add New → Project**, import your fork, keep the repository
 
 Add these environment variables to the **Production** environment before the first deployment:
 
-| Variable                               | Value                                                                                                                     |
-| -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| `NEXT_PUBLIC_SUPABASE_URL`             | Project URL from Supabase **Project Settings → API**.                                                                     |
-| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Publishable key from the same Supabase API settings. It is designed for browser use; RLS still determines access.         |
-| `ATTENDANCE_TOKEN_SECRET`              | A unique random signing secret. Keep it server-only and use at least 32 random bytes.                                     |
-| `NEXT_PUBLIC_SITE_URL`                 | The exact HTTPS origin users will open, such as `https://your-project.vercel.app`. Do not use `localhost` for Production. |
+| Variable                               | Value                                                                                                                            |
+| -------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `NEXT_PUBLIC_SUPABASE_URL`             | Project URL from Supabase **Project Settings → API**.                                                                            |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Publishable key from the same Supabase API settings. It is designed for browser use; RLS still determines access.                |
+| `SAMS_INSTITUTION_ID`                  | The institution UUID served by this deployment; use the migration's placeholder UUID unless you created a different institution. |
+| `ATTENDANCE_TOKEN_SECRET`              | A unique random signing secret. Keep it server-only and use at least 32 random bytes.                                            |
+| `NEXT_PUBLIC_SITE_URL`                 | The exact HTTPS origin users will open, such as `https://your-project.vercel.app`. Do not use `localhost` for Production.        |
 
 Generate a signing secret in a terminal with Node.js:
 

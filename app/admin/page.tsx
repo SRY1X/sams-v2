@@ -1,6 +1,8 @@
 import { AppHeader } from "@/components/app-header";
 import type { ReactNode } from "react";
 import { requireMembership } from "@/lib/auth/session";
+import { formatInstitutionDateTime } from "@/lib/config/format";
+import { requireSupabaseData } from "@/lib/supabase/errors";
 import {
   assignFaculty,
   createCourse,
@@ -96,14 +98,14 @@ export default async function AdminDashboard({
   const member = await requireMembership("admin");
   const query = await searchParams;
   const [
-    { data: profile },
-    { data: institution },
-    { data: departments },
-    { data: terms },
-    { data: courses },
-    { data: sections },
-    { data: memberships },
-    { data: audit },
+    profileResult,
+    institutionResult,
+    departmentsResult,
+    termsResult,
+    coursesResult,
+    sectionsResult,
+    membershipsResult,
+    auditResult,
   ] = await Promise.all([
     member.supabase
       .from("profiles")
@@ -148,13 +150,30 @@ export default async function AdminDashboard({
       .order("created_at", { ascending: false })
       .limit(8),
   ]);
+  const profile = requireSupabaseData(profileResult, "administrator profile");
+  const institution = requireSupabaseData(
+    institutionResult,
+    "institution details",
+  );
+  const departments = requireSupabaseData(departmentsResult, "department list");
+  const terms = requireSupabaseData(termsResult, "academic term list");
+  const courses = requireSupabaseData(coursesResult, "course list");
+  const sections = requireSupabaseData(sectionsResult, "section list");
+  const memberships = requireSupabaseData(
+    membershipsResult,
+    "institution member list",
+  );
+  const audit = requireSupabaseData(auditResult, "audit event list");
   const memberIds = [...new Set((memberships ?? []).map((row) => row.user_id))];
-  const { data: memberProfiles } = memberIds.length
-    ? await member.supabase
-        .from("profiles")
-        .select("id,display_name")
-        .in("id", memberIds)
-    : { data: [] };
+  const memberProfiles = memberIds.length
+    ? requireSupabaseData(
+        await member.supabase
+          .from("profiles")
+          .select("id,display_name")
+          .in("id", memberIds),
+        "member profile list",
+      )
+    : [];
   const profileById = new Map(
     (memberProfiles ?? []).map((row) => [row.id, row.display_name]),
   );
@@ -558,7 +577,10 @@ export default async function AdminDashboard({
                     </p>
                     <p className="mt-1 text-[10px] text-[#a1a1a1]">
                       {event.entity_type} ·{" "}
-                      {new Date(event.created_at).toLocaleString()}
+                      {formatInstitutionDateTime(
+                        event.created_at,
+                        institution?.timezone ?? "UTC",
+                      )}
                     </p>
                   </div>
                 ))}

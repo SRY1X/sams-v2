@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { getSiteOrigin } from "./server-env";
+import { getConfiguredInstitutionId, getSiteOrigin } from "./server-env";
 
 vi.mock("server-only", () => ({}));
 
@@ -49,4 +49,27 @@ describe("site origin", () => {
       "Set NEXT_PUBLIC_SITE_URL to the canonical HTTPS site origin.",
     );
   });
+});
+
+describe("institution boundary", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it("returns the configured institution UUID", () => {
+    vi.stubEnv("SAMS_INSTITUTION_ID", "00000000-0000-4000-8000-000000000001");
+
+    expect(getConfiguredInstitutionId()).toBe(
+      "00000000-0000-4000-8000-000000000001",
+    );
+  });
+
+  it.each([undefined, "not-a-uuid"])(
+    "fails closed for an invalid institution boundary: %s",
+    (value) => {
+      vi.stubEnv("SAMS_INSTITUTION_ID", value);
+
+      expect(getConfiguredInstitutionId()).toBeNull();
+    },
+  );
 });

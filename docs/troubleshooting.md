@@ -2,7 +2,7 @@
 
 ## Sign-in says configuration is missing
 
-Check that the Vercel environment has `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, and `ATTENDANCE_TOKEN_SECRET`. Redeploy after changing Vercel environment variables. For optional local app work, check `.env.local` and restart `npm run dev`.
+Check that the Vercel environment has `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `SAMS_INSTITUTION_ID`, and `ATTENDANCE_TOKEN_SECRET`. Redeploy after changing Vercel environment variables. For optional local app work, check `.env.local` and restart `npm run dev`.
 
 ## Auth user can sign in but has no portal
 

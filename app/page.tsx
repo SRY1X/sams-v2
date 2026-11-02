@@ -3,12 +3,15 @@ import { redirect } from "next/navigation";
 import { Brand } from "@/components/brand";
 import { getPublicEnv } from "@/lib/config/env";
 import { getMembership } from "@/lib/auth/session";
+import { getConfiguredInstitutionId } from "@/lib/config/server-env";
 
 export default async function Home() {
   const membership = await getMembership();
   if (membership) redirect("/dashboard");
   const configured = Boolean(
-    getPublicEnv().supabaseUrl && getPublicEnv().supabasePublishableKey,
+    getPublicEnv().supabaseUrl &&
+    getPublicEnv().supabasePublishableKey &&
+    getConfiguredInstitutionId(),
   );
   return (
     <main className="min-h-screen overflow-hidden bg-[#0a0a0a]">
@@ -43,8 +46,9 @@ export default async function Home() {
           </div>
           {!configured && (
             <p className="mt-7 max-w-lg rounded-[10px] border border-[#57411e] bg-[#211b12] p-4 text-[12px] leading-5 text-[#f1c878]">
-              <strong>Local setup required.</strong> Add the Supabase URL and
-              publishable key to your local environment to enable sign-in.
+              <strong>Local setup required.</strong> Add the Supabase URL,
+              publishable key, and institution ID to your local environment to
+              enable sign-in.
             </p>
           )}
           <div className="mt-12 flex flex-wrap gap-x-8 gap-y-3 text-[11px] font-semibold text-[#a1a1a1]">
