@@ -1,5 +1,4 @@
-import { AppHeader } from "@/components/app-header";
-import { AdminNavigation } from "@/components/admin-navigation";
+import { AdminWorkspace } from "@/components/admin-workspace";
 import { formatInstitutionDateTime } from "@/lib/config/format";
 import { requireMembership } from "@/lib/auth/session";
 import { requireSupabaseData } from "@/lib/supabase/errors";
@@ -263,136 +262,125 @@ export default async function AdminRecordsPage({
   ];
   const groups = [...new Set(rows.map((r) => r.group))];
   return (
-    <div className="admin-workspace">
-      <AppHeader role="admin" name={profile?.display_name ?? "Administrator"} />
-      <div className="admin-layout">
-        <aside className="admin-sidebar">
-          <div className="admin-sidebar-title">
-            <span className="admin-mark">S</span>
-            <div>
-              <strong>Administration</strong>
-              <small>{institution?.name ?? "Institution workspace"}</small>
-            </div>
+    <AdminWorkspace
+      active={section}
+      name={profile?.display_name ?? "Administrator"}
+      institution={institution?.name ?? "Institution workspace"}
+      timezone={institution?.timezone ?? "UTC"}
+      sidebarNote="Records are institution scoped"
+    >
+      <main className="admin-main">
+        <header className="admin-page-heading">
+          <div>
+            <p className="admin-eyebrow">Manage records</p>
+            <h1>{titles[section]}</h1>
+            <p>
+              Search and filter institution records. Changes remain protected by
+              database policies.
+            </p>
           </div>
-          <AdminNavigation active={section} />
-          <div className="admin-sidebar-foot">
-            Records are institution scoped
-          </div>
-        </aside>
-        <main className="admin-main">
-          <header className="admin-page-heading">
-            <div>
-              <p className="admin-eyebrow">Manage records</p>
-              <h1>{titles[section]}</h1>
-              <p>
-                Search and filter institution records. Changes remain protected
-                by database policies.
-              </p>
-            </div>
-            {section === "students" || section === "faculty" ? (
-              <Link className="admin-primary" href="/admin/setup#invite">
-                + Invite member
-              </Link>
-            ) : null}
-          </header>
-          <section className="admin-card admin-record-card">
-            <form method="get" className="admin-filters">
-              <label className="admin-search">
-                <span className="sr-only">
-                  Search {titles[section].toLowerCase()}
-                </span>
-                <input
-                  name="q"
-                  defaultValue={typeof query.q === "string" ? query.q : ""}
-                  placeholder="Search names, codes, or related records"
-                />
-                <span aria-hidden="true">⌕</span>
-              </label>
-              {statuses.length > 1 || statusFilter ? (
-                <label className="admin-filter-label">
-                  <span>Status</span>
-                  <select name="status" defaultValue={statusFilter}>
-                    <option value="">All statuses</option>
-                    {statuses.map((s) => (
-                      <option key={s} value={s.toLowerCase()}>
-                        {s}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              ) : null}
-              {groups.length > 1 || groupFilter ? (
-                <label className="admin-filter-label">
-                  <span>Group</span>
-                  <select name="group" defaultValue={groupFilter}>
-                    <option value="">All groups</option>
-                    {groups.map((g) => (
-                      <option key={g} value={g}>
-                        {g}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              ) : null}
-              <button className="admin-ghost" type="submit">
-                Apply filters
-              </button>
-              <Link className="admin-text-link" href={`/admin/${section}`}>
-                Reset
-              </Link>
-            </form>
-            <div className="admin-table-meta">
-              {filtered.length} record{filtered.length === 1 ? "" : "s"} shown{" "}
-              <span>
-                Showing up to {rows.length} records · use search and filters to
-                narrow results
+          {section === "students" || section === "faculty" ? (
+            <Link className="admin-primary" href="/admin/setup#invite">
+              + Invite member
+            </Link>
+          ) : null}
+        </header>
+        <section className="admin-card admin-record-card">
+          <form method="get" className="admin-filters">
+            <label className="admin-search">
+              <span className="sr-only">
+                Search {titles[section].toLowerCase()}
               </span>
-            </div>
-            <div className="admin-table-wrap">
-              <table className="admin-table">
-                <thead>
-                  <tr>
-                    <th>Record</th>
-                    <th>Details</th>
-                    <th>Group</th>
-                    <th>Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filtered.map((r) => (
-                    <tr key={r.id}>
-                      <td>
-                        <strong>{r.title}</strong>
-                      </td>
-                      <td>{r.detail}</td>
-                      <td>{r.group}</td>
-                      <td>
-                        <span
-                          className={`admin-status ${r.status.toLowerCase() === "active" || r.status.toLowerCase() === "open" || r.status.toLowerCase() === "recorded" ? "good" : ""}`}
-                        >
-                          {r.status}
-                        </span>
-                      </td>
-                    </tr>
+              <input
+                name="q"
+                defaultValue={typeof query.q === "string" ? query.q : ""}
+                placeholder="Search names, codes, or related records"
+              />
+              <span aria-hidden="true">⌕</span>
+            </label>
+            {statuses.length > 1 || statusFilter ? (
+              <label className="admin-filter-label">
+                <span>Status</span>
+                <select name="status" defaultValue={statusFilter}>
+                  <option value="">All statuses</option>
+                  {statuses.map((s) => (
+                    <option key={s} value={s.toLowerCase()}>
+                      {s}
+                    </option>
                   ))}
-                  {!filtered.length && (
-                    <tr>
-                      <td colSpan={4} className="admin-empty">
-                        No matching records. Try changing or clearing the
-                        filters.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </section>
-          <p className="admin-footnote">
-            Student names are visible here only to authorized institution
-            administrators and assigned staff.
-          </p>
-        </main>
-      </div>
-    </div>
+                </select>
+              </label>
+            ) : null}
+            {groups.length > 1 || groupFilter ? (
+              <label className="admin-filter-label">
+                <span>Group</span>
+                <select name="group" defaultValue={groupFilter}>
+                  <option value="">All groups</option>
+                  {groups.map((g) => (
+                    <option key={g} value={g}>
+                      {g}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ) : null}
+            <button className="admin-ghost" type="submit">
+              Apply filters
+            </button>
+            <Link className="admin-text-link" href={`/admin/${section}`}>
+              Reset
+            </Link>
+          </form>
+          <div className="admin-table-meta">
+            {filtered.length} record{filtered.length === 1 ? "" : "s"} shown{" "}
+            <span>
+              Showing up to {rows.length} records · use search and filters to
+              narrow results
+            </span>
+          </div>
+          <div className="admin-table-wrap">
+            <table className="admin-table">
+              <thead>
+                <tr>
+                  <th>Record</th>
+                  <th>Details</th>
+                  <th>Group</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map((r) => (
+                  <tr key={r.id}>
+                    <td>
+                      <strong>{r.title}</strong>
+                    </td>
+                    <td>{r.detail}</td>
+                    <td>{r.group}</td>
+                    <td>
+                      <span
+                        className={`admin-status ${r.status.toLowerCase() === "active" || r.status.toLowerCase() === "open" || r.status.toLowerCase() === "recorded" ? "good" : ""}`}
+                      >
+                        {r.status}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+                {!filtered.length && (
+                  <tr>
+                    <td colSpan={4} className="admin-empty">
+                      No matching records. Try changing or clearing the filters.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </section>
+        <p className="admin-footnote">
+          Student names are visible here only to authorized institution
+          administrators and assigned staff.
+        </p>
+      </main>
+    </AdminWorkspace>
   );
 }

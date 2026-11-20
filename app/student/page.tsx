@@ -115,7 +115,11 @@ export default async function StudentDashboard() {
 
   return (
     <>
-      <AppHeader role="student" name={profile?.display_name ?? "Student"} />
+      <AppHeader
+        role="student"
+        name={profile?.display_name ?? "Student"}
+        active="overview"
+      />
       <main className="shell py-9 sm:py-12">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
@@ -123,7 +127,7 @@ export default async function StudentDashboard() {
             <h1 className="mt-2 text-3xl font-bold tracking-tight">
               Good day, {profile?.display_name?.split(" ")[0] ?? "there"}.
             </h1>
-            <p className="mt-2 text-sm text-[#a1a1a1]">
+            <p className="mt-2 text-sm text-[#b4b4b4]">
               Your classes and attendance, all in one place.
             </p>
           </div>
@@ -145,7 +149,7 @@ export default async function StudentDashboard() {
             <p className="mt-3 text-3xl font-bold">
               {sectionCards.length.toString().padStart(2, "0")}
             </p>
-            <p className="mt-1 text-xs text-[#a1a1a1]">
+            <p className="mt-1 text-xs text-[#b4b4b4]">
               Current course sections
             </p>
           </div>
@@ -154,17 +158,17 @@ export default async function StudentDashboard() {
             <p className="mt-3 text-3xl font-bold">
               {presentCount.toString().padStart(2, "0")}
             </p>
-            <p className="mt-1 text-xs text-[#a1a1a1]">
+            <p className="mt-1 text-xs text-[#b4b4b4]">
               Your latest attendance events
             </p>
           </div>
         </section>
         <div className="mt-9 grid gap-6 lg:grid-cols-[1.35fr_.85fr]">
           <section className="surface overflow-hidden">
-            <div className="flex items-center justify-between border-b border-[#262626] px-5 py-4">
+            <div className="flex items-center justify-between border-b border-[#2e2e2e] px-5 py-4">
               <div>
                 <h2 className="font-bold">Your sections</h2>
-                <p className="mt-1 text-[11px] text-[#a1a1a1]">
+                <p className="mt-1 text-[11px] text-[#b4b4b4]">
                   Courses you are currently enrolled in
                 </p>
               </div>
@@ -174,7 +178,7 @@ export default async function StudentDashboard() {
               </span>
             </div>
             {sectionCards.length ? (
-              <div className="divide-y divide-[#262626]">
+              <div className="divide-y divide-[#2e2e2e]">
                 {sectionCards.map((section) => {
                   const course = courseById.get(section.course_id);
                   return (
@@ -182,14 +186,14 @@ export default async function StudentDashboard() {
                       key={section.id}
                       className="flex items-center gap-4 px-5 py-4"
                     >
-                      <span className="grid size-10 place-items-center rounded-xl bg-[#171717] text-[10px] font-extrabold text-[#7cc9a0]">
+                      <span className="grid size-10 place-items-center rounded-xl bg-[#242424] text-[10px] font-extrabold text-[#3ecf8e]">
                         {course?.code.slice(0, 3) ?? "CLS"}
                       </span>
                       <div className="min-w-0 flex-1">
                         <p className="truncate text-sm font-bold">
                           {course?.title ?? "Course"}
                         </p>
-                        <p className="mt-1 text-[11px] text-[#a1a1a1]">
+                        <p className="mt-1 text-[11px] text-[#b4b4b4]">
                           {course?.code ?? ""} · Section {section.section_code}{" "}
                           · {termById.get(section.term_id) ?? "Academic term"}
                         </p>
@@ -202,7 +206,7 @@ export default async function StudentDashboard() {
             ) : (
               <div className="px-5 py-12 text-center">
                 <p className="text-sm font-semibold">No sections yet</p>
-                <p className="mt-2 text-xs text-[#a1a1a1]">
+                <p className="mt-2 text-xs text-[#b4b4b4]">
                   Your institution administrator will enroll you in your
                   courses.
                 </p>
@@ -210,14 +214,14 @@ export default async function StudentDashboard() {
             )}
           </section>
           <section className="surface overflow-hidden">
-            <div className="border-b border-[#262626] px-5 py-4">
+            <div className="border-b border-[#2e2e2e] px-5 py-4">
               <h2 className="font-bold">Recent attendance</h2>
-              <p className="mt-1 text-[11px] text-[#a1a1a1]">
+              <p className="mt-1 text-[11px] text-[#b4b4b4]">
                 Your latest check-ins
               </p>
             </div>
             {records?.length ? (
-              <div className="divide-y divide-[#262626]">
+              <div className="divide-y divide-[#2e2e2e]">
                 {records.slice(0, 5).map((record) => {
                   const session = sessionById.get(record.session_id);
                   const section = session
@@ -235,7 +239,7 @@ export default async function StudentDashboard() {
                         <p className="text-xs font-bold">
                           {course?.title ?? "Class session"}
                         </p>
-                        <p className="mt-1 text-[10px] text-[#a1a1a1]">
+                        <p className="mt-1 text-[10px] text-[#b4b4b4]">
                           {formatInstitutionDateTime(
                             record.recorded_at,
                             institution?.timezone ?? "UTC",
@@ -248,13 +252,13 @@ export default async function StudentDashboard() {
                 })}
               </div>
             ) : (
-              <div className="px-5 py-12 text-center text-xs text-[#a1a1a1]">
+              <div className="px-5 py-12 text-center text-xs text-[#b4b4b4]">
                 Your attendance history will appear here.
               </div>
             )}
-            <div className="border-t border-[#262626] px-5 py-3">
+            <div className="border-t border-[#2e2e2e] px-5 py-3">
               <Link
-                className="text-xs font-bold text-[#ff8833]"
+                className="text-xs font-bold text-[#3ecf8e]"
                 href="/student/history"
               >
                 Open full history →
@@ -262,7 +266,7 @@ export default async function StudentDashboard() {
             </div>
           </section>
         </div>
-        <p className="mt-8 text-[10px] text-[#737373]">
+        <p className="mt-8 text-[10px] text-[#898989]">
           Attendance records are visible only to you and authorized staff for
           your enrolled sections.
         </p>

@@ -1,32 +1,35 @@
 @import "tailwindcss";
 
 @theme {
-  --color-obsidian-canvas: #0a0a0a;
+  --color-obsidian-canvas: #121212;
   --color-true-black: #000000;
-  --color-charcoal-surface: #171717;
-  --color-graphite-edge: #262626;
-  --color-steel-border: #464646;
+  --color-charcoal-surface: #242424;
+  --color-graphite-edge: #2e2e2e;
+  --color-steel-border: #393939;
   --color-cloud-white: #fafafa;
   --color-paper-white: #e5e5e5;
-  --color-fog: #a1a1a1;
-  --color-ash: #737373;
-  --color-signal-orange: #ff8833;
-  --font-sans: Arial, Helvetica, sans-serif;
+  --color-fog: #b4b4b4;
+  --color-ash: #898989;
+  --color-phosphor-green: #3ecf8e;
+  --font-sans:
+    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", sans-serif;
 }
 
 :root {
   color-scheme: dark;
-  --canvas: #0a0a0a;
-  --surface: #111111;
-  --surface-raised: #171717;
-  --edge: #262626;
-  --edge-strong: #464646;
+  --canvas: #121212;
+  --surface: #121212;
+  --surface-raised: #242424;
+  --edge: #2e2e2e;
+  --edge-strong: #393939;
   --text: #fafafa;
-  --muted: #a1a1a1;
-  --subtle: #737373;
-  --accent: #ff8833;
-  --success: #7cc9a0;
-  --success-surface: #142019;
+  --muted: #b4b4b4;
+  --subtle: #898989;
+  --accent: #3ecf8e;
+  --accent-hover: #00c573;
+  --success: #3ecf8e;
+  --success-surface: #102b1e;
   --danger: #ff9588;
   --danger-surface: #261715;
 }
@@ -67,7 +70,7 @@ a:hover {
   color: var(--accent);
 }
 ::selection {
-  background: #693b20;
+  background: #1f4b37;
   color: var(--text);
 }
 :focus-visible {
@@ -76,7 +79,7 @@ a:hover {
 }
 
 .shell {
-  width: min(1152px, calc(100% - 48px));
+  width: min(1200px, calc(100% - 48px));
   margin-inline: auto;
 }
 .eyebrow {
@@ -88,9 +91,8 @@ a:hover {
 }
 .surface {
   border: 1px solid var(--edge);
-  border-radius: 10px;
+  border-radius: 16px;
   background: var(--surface);
-  box-shadow: 0 4px 12px rgb(0 0 0 / 18%);
 }
 .lattice-art {
   position: absolute;
@@ -105,21 +107,13 @@ a:hover {
   position: absolute;
   width: 74%;
   aspect-ratio: 1;
-  border: 1px solid rgb(250 250 250 / 28%);
-  border-radius: 18%;
+  border: 1px solid rgb(180 180 180 / 18%);
+  border-radius: 16px;
   content: "";
-  filter: drop-shadow(0 0 10px rgb(250 250 250 / 12%));
   transform: rotate(24deg);
 }
 .lattice-art::after {
   width: 58%;
-  border-color: transparent;
-  background:
-    linear-gradient(var(--canvas), var(--canvas)) padding-box,
-    linear-gradient(115deg, #ffb931 12%, #fafafa 38%, #fafafa 58%, #2e73fc 80%)
-      border-box;
-  border: 1px solid transparent;
-  filter: drop-shadow(0 0 12px rgb(255 255 255 / 20%));
   transform: rotate(42deg);
 }
 .button {
@@ -128,22 +122,21 @@ a:hover {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  border: 1px solid rgb(255 255 255 / 10%);
-  border-radius: 8px;
-  background: #e5e5e5;
+  border: 1px solid var(--accent);
+  border-radius: 9999px;
+  background: var(--accent);
   padding: 0 16px;
-  color: #171717;
+  color: #121212;
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
   transition:
     background 0.16s ease,
-    transform 0.16s ease;
+    border-color 0.16s ease;
 }
 .button:hover {
-  transform: translateY(-1px);
-  background: #fff;
-  color: #171717;
+  background: var(--accent-hover);
+  color: #121212;
 }
 .button:disabled {
   cursor: wait;
@@ -151,12 +144,12 @@ a:hover {
 }
 .button.secondary {
   border-color: var(--edge-strong);
-  background: var(--edge);
+  background: transparent;
   color: var(--text);
-  box-shadow: 0 1px 3px rgb(0 0 0 / 20%);
 }
 .button.secondary:hover {
-  background: #333;
+  background: rgb(255 255 255 / 4%);
+  border-color: #4d4d4d;
   color: var(--text);
 }
 .input {
@@ -169,8 +162,9 @@ a:hover {
   color: var(--text);
 }
 .input:focus {
-  border-color: var(--muted);
-  outline: 2px solid rgb(255 255 255 / 10%);
+  border-color: var(--accent);
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 .input::placeholder {
   color: var(--subtle);
@@ -183,7 +177,7 @@ select option {
   display: block;
   margin-bottom: 7px;
   color: var(--muted);
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
 }
 .muted {
@@ -219,7 +213,7 @@ tr:last-child td {
 .badge {
   display: inline-flex;
   align-items: center;
-  border: 1px solid #244332;
+  border: 1px solid #1f4b37;
   border-radius: 999px;
   background: var(--success-surface);
   padding: 5px 9px;
@@ -240,10 +234,138 @@ tr:last-child td {
   color: var(--danger);
   font-size: 13px;
 }
+.notice-box {
+  display: flex;
+  gap: 12px;
+  border: 1px solid var(--edge);
+  border-radius: 16px;
+  background: var(--surface-raised);
+  padding: 16px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.55;
+}
+.notice-box strong {
+  display: block;
+  margin-bottom: 3px;
+  color: var(--text);
+  font-weight: 500;
+}
 
-@media (max-width: 680px) {
+.app-header {
+  border-bottom: 1px solid var(--edge);
+  background: var(--surface-raised);
+}
+.app-header-inner {
+  display: grid;
+  min-height: 68px;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 24px;
+}
+.app-role-nav {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: center;
+  gap: 26px;
+  color: var(--muted);
+  font-size: 13px;
+}
+.app-role-nav a {
+  padding-block: 10px;
+  white-space: nowrap;
+  transition: color 0.15s ease;
+}
+.app-role-nav a:hover {
+  color: var(--accent);
+}
+.app-role-nav a.is-active {
+  color: var(--accent);
+}
+.app-header-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+}
+.app-user {
+  display: grid;
+  gap: 2px;
+  text-align: right;
+}
+.app-user-name {
+  max-width: 180px;
+  overflow: hidden;
+  font-size: 13px;
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.app-user-role {
+  color: var(--muted);
+  font-size: 11px;
+  text-transform: capitalize;
+}
+.app-sign-out {
+  min-height: 38px;
+  padding-inline: 14px;
+  font-size: 12px;
+}
+
+@media (max-width: 760px) {
   .shell {
-    width: min(calc(100% - 28px), 1152px);
+    width: min(calc(100% - 32px), 1200px);
+  }
+  .app-header-inner {
+    min-height: 0;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 0 12px;
+    padding-block: 12px 0;
+  }
+  .app-brand {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .app-header-actions {
+    grid-column: 2;
+    grid-row: 1;
+  }
+  .app-role-nav {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    justify-content: flex-start;
+    gap: 22px;
+    margin-top: 10px;
+    overflow-x: auto;
+    border-top: 1px solid var(--edge);
+    font-size: 12px;
+    scrollbar-width: none;
+  }
+  .app-role-nav::-webkit-scrollbar {
+    display: none;
+  }
+  .app-role-nav a {
+    padding-block: 13px;
+  }
+  .app-user-name {
+    max-width: 110px;
+    font-size: 12px;
+  }
+  .app-user-role {
+    font-size: 10px;
+  }
+  .app-header-actions {
+    gap: 9px;
+  }
+  .app-sign-out {
+    min-height: 36px;
+    padding-inline: 12px;
+  }
+}
+@media (max-width: 420px) {
+  .app-user {
+    display: none;
   }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -257,7 +379,7 @@ tr:last-child td {
   }
 }
 
-/* Admin workspace: a restrained midnight palette with accessible green actions. */
+/* Admin workspace shares the same charcoal and mint system as every role. */
 .admin-workspace {
   --admin-canvas: #121212;
   --admin-surface: #121212;
@@ -268,20 +390,20 @@ tr:last-child td {
   --admin-muted: #b4b4b4;
   --admin-subtle: #898989;
   --admin-green: #3ecf8e;
-  min-height: calc(100vh - 72px);
+  min-height: calc(100vh - 68px);
   background: var(--admin-canvas);
   color: var(--admin-text);
 }
 .admin-layout {
   display: grid;
-  min-height: calc(100vh - 72px);
+  min-height: calc(100vh - 68px);
   grid-template-columns: 244px minmax(0, 1fr);
 }
 .admin-sidebar {
   position: sticky;
   top: 0;
   display: flex;
-  height: calc(100vh - 72px);
+  height: calc(100vh - 68px);
   flex-direction: column;
   border-right: 1px solid var(--admin-border);
   padding: 24px 16px;
@@ -305,6 +427,10 @@ tr:last-child td {
   margin-top: 4px;
   color: var(--admin-subtle);
   font-size: 11px;
+  max-width: 175px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .admin-mark {
   display: grid;
@@ -570,19 +696,6 @@ tr:last-child td {
   font-size: 11px;
   line-height: 1.5;
 }
-.admin-top-nav {
-  border-bottom: 1px solid var(--admin-border);
-  padding: 0 max(16px, calc((100% - 1152px) / 2));
-  overflow-x: auto;
-}
-.admin-top-nav .admin-nav {
-  flex-direction: row;
-  gap: 5px;
-  padding: 10px 0;
-}
-.admin-top-nav .admin-nav-link {
-  white-space: nowrap;
-}
 .admin-record-card {
   padding: 0;
   overflow: hidden;
@@ -676,7 +789,7 @@ tr:last-child td {
 }
 .admin-status.good {
   border-color: #28523d;
-  background: #14251c;
+  background: #18392a;
   color: var(--admin-green);
 }
 .admin-empty {
@@ -750,12 +863,27 @@ tr:last-child td {
     padding: 14px 14px 8px;
   }
   .admin-sidebar-title {
-    display: none;
+    border: 0;
+    padding: 0 4px 12px;
+  }
+  .admin-mark {
+    width: 30px;
+    height: 30px;
+  }
+  .admin-sidebar-copy strong {
+    font-size: 12px;
+  }
+  .admin-sidebar-copy small {
+    max-width: 220px;
   }
   .admin-nav {
     flex-direction: row;
     overflow-x: auto;
     padding: 0;
+    scrollbar-width: none;
+  }
+  .admin-nav::-webkit-scrollbar {
+    display: none;
   }
   .admin-nav-link {
     white-space: nowrap;
@@ -764,7 +892,7 @@ tr:last-child td {
     display: none;
   }
   .admin-main {
-    padding: 28px 16px;
+    padding: 28px 16px 36px;
   }
   .admin-lower-grid {
     grid-template-columns: 1fr;

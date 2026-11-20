@@ -20,7 +20,7 @@ export default async function ResetPasswordPage({
         <h1 className="mt-2 text-center text-2xl font-bold">
           Choose a new password
         </h1>
-        <p className="mt-2 text-center text-sm text-[#a1a1a1]">
+        <p className="mt-2 text-center text-sm text-[#b4b4b4]">
           Use at least 12 characters. You’ll sign in again after updating it.
         </p>
         {query.error && (

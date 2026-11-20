@@ -11,13 +11,13 @@ export default function AccessPage() {
             <Brand />
           </Link>
         </div>
-        <div className="mx-auto grid size-14 place-items-center rounded-2xl bg-[#142019] text-2xl text-[#ff8833]">
+        <div className="mx-auto grid size-14 place-items-center rounded-2xl bg-[#102b1e] text-2xl text-[#3ecf8e]">
           ⌁
         </div>
         <h1 className="mt-5 text-2xl font-bold tracking-tight">
           Access is being set up
         </h1>
-        <p className="mx-auto mt-3 max-w-sm text-sm leading-6 text-[#a1a1a1]">
+        <p className="mx-auto mt-3 max-w-sm text-sm leading-6 text-[#b4b4b4]">
           Your account is signed in, but it is not linked to an active
           institution role yet. Ask your academic administrator to add your
           account.

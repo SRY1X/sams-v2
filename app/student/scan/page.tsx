@@ -17,10 +17,14 @@ export default async function StudentScanPage() {
 
   return (
     <>
-      <AppHeader role="student" name={profile?.display_name ?? "Student"} />
+      <AppHeader
+        role="student"
+        name={profile?.display_name ?? "Student"}
+        active="scan"
+      />
       <main className="shell max-w-2xl py-9 sm:py-12">
         <Link
-          className="text-sm font-semibold text-[#a1a1a1] hover:text-white"
+          className="text-sm font-semibold text-[#b4b4b4] hover:text-white"
           href="/student"
         >
           ← Student dashboard
@@ -29,11 +33,11 @@ export default async function StudentScanPage() {
         <h1 className="mt-2 text-3xl font-bold tracking-tight">
           Scan a class QR code
         </h1>
-        <p className="mt-2 text-sm leading-6 text-[#a1a1a1]">
+        <p className="mt-2 text-sm leading-6 text-[#b4b4b4]">
           Point your camera at the active QR code shown by your instructor. Keep
           this page open while the code is scanned.
         </p>
-        <div className="mt-5 rounded-xl border border-[#262626] bg-[#111111] p-4 text-xs leading-5 text-[#a1a1a1]">
+        <div className="mt-5 rounded-xl border border-[#2e2e2e] bg-[#121212] p-4 text-xs leading-5 text-[#b4b4b4]">
           <p className="font-semibold text-[#fafafa]">Before you scan</p>
           <ul className="mt-2 list-disc space-y-1 pl-5">
             <li>Open SAMS over HTTPS and allow camera access when prompted.</li>

@@ -191,7 +191,7 @@ export function AttendanceScanner() {
 
   return (
     <section className="surface mt-7 p-5 sm:p-7">
-      <div className="relative mt-1 aspect-[4/3] overflow-hidden rounded-xl border border-[#262626] bg-black">
+      <div className="relative mt-1 aspect-[4/3] overflow-hidden rounded-xl border border-[#2e2e2e] bg-black">
         <video
           ref={videoRef}
           className={`size-full object-cover ${state === "scanning" ? "" : "hidden"}`}
@@ -203,13 +203,13 @@ export function AttendanceScanner() {
         {state !== "scanning" && (
           <div className="absolute inset-0 grid place-items-center px-6 text-center">
             <div>
-              <span className="mx-auto grid size-14 place-items-center rounded-2xl bg-[#171717] text-2xl text-[#ff8833]">
+              <span className="mx-auto grid size-14 place-items-center rounded-2xl bg-[#242424] text-2xl text-[#3ecf8e]">
                 ⌗
               </span>
               <p className="mt-4 text-sm font-semibold">
                 {state === "success" ? "Check-in complete" : "Camera scanner"}
               </p>
-              <p className="mt-2 text-xs leading-5 text-[#a1a1a1]">
+              <p className="mt-2 text-xs leading-5 text-[#b4b4b4]">
                 {cameraAvailable === false
                   ? "Camera access needs HTTPS. For this local preview, use your phone’s Camera app to scan the QR displayed on your instructor’s screen."
                   : "Your camera is used to read the QR code on this device. Video is not uploaded."}
@@ -219,13 +219,13 @@ export function AttendanceScanner() {
         )}
         {state === "scanning" && (
           <div className="pointer-events-none absolute inset-0 grid place-items-center">
-            <div className="size-[58%] rounded-2xl border-2 border-[#ff8833] shadow-[0_0_0_999px_rgb(0_0_0_/_28%)]" />
+            <div className="size-[58%] rounded-2xl border-2 border-[#3ecf8e] shadow-[0_0_0_999px_rgb(0_0_0_/_28%)]" />
           </div>
         )}
       </div>
 
       <p
-        className="mt-4 min-h-10 text-sm text-[#a1a1a1]"
+        className="mt-4 min-h-10 text-sm text-[#b4b4b4]"
         role="status"
         aria-live="polite"
       >

@@ -67,11 +67,11 @@ export function LiveAttendanceList({
     };
   }, [sessionId]);
   return (
-    <div className="overflow-hidden rounded-xl border border-[#262626]">
-      <div className="flex items-center justify-between bg-[#171717] px-4 py-3">
+    <div className="overflow-hidden rounded-xl border border-[#2e2e2e]">
+      <div className="flex items-center justify-between bg-[#242424] px-4 py-3">
         <div>
           <p className="text-xs font-bold">Live check-ins</p>
-          <p className="mt-1 text-[10px] text-[#a1a1a1]">
+          <p className="mt-1 text-[10px] text-[#b4b4b4]">
             Updates every 2 seconds while this page is open.
           </p>
         </div>
@@ -109,7 +109,7 @@ export function LiveAttendanceList({
               <tr>
                 <td
                   colSpan={3}
-                  className="py-12 text-center text-xs text-[#a1a1a1]"
+                  className="py-12 text-center text-xs text-[#b4b4b4]"
                 >
                   Waiting for students to scan.
                 </td>

@@ -9,49 +9,66 @@ const roleHome: Record<Role, string> = {
   admin: "/admin",
 };
 
-export function AppHeader({ role, name }: { role: Role; name: string }) {
+export function AppHeader({
+  role,
+  name,
+  active,
+}: {
+  role: Role;
+  name: string;
+  active?: "overview" | "scan" | "history" | "sections";
+}) {
   const root = roleHome[role];
   return (
-    <header className="border-b border-[#262626] bg-[#171717]">
-      <div className="shell flex min-h-[72px] items-center justify-between gap-4">
-        <Link href={root} aria-label="SAMS V2 home">
+    <header className="app-header">
+      <div className="shell app-header-inner">
+        <Link href={root} className="app-brand" aria-label="SAMS V2 home">
           <Brand />
         </Link>
-        <nav
-          className="hidden items-center gap-7 text-[12px] font-semibold text-[#a1a1a1] sm:flex"
-          aria-label="Main navigation"
-        >
-          <Link href={root} className="hover:text-[#ff8833]">
-            Overview
-          </Link>
-          {role === "student" && (
-            <Link href="/student/history" className="hover:text-[#ff8833]">
-              Attendance history
+        {role !== "admin" && (
+          <nav className="app-role-nav" aria-label="Primary navigation">
+            <Link
+              href={root}
+              className={active === "overview" ? "is-active" : undefined}
+              aria-current={active === "overview" ? "page" : undefined}
+            >
+              Overview
             </Link>
-          )}
-          {role === "faculty" && (
-            <Link href="/faculty" className="hover:text-[#ff8833]">
-              My sections
-            </Link>
-          )}
-          {role === "admin" && (
-            <Link href="/admin/setup" className="hover:text-[#ff8833]">
-              Institution setup
-            </Link>
-          )}
-        </nav>
-        <div className="flex items-center gap-3">
-          <span className="hidden text-right sm:block">
-            <span className="block text-[12px] font-bold">{name}</span>
-            <span className="block text-[10px] capitalize text-[#a1a1a1]">
-              {role}
-            </span>
+            {role === "student" ? (
+              <>
+                <Link
+                  href="/student/scan"
+                  className={active === "scan" ? "is-active" : undefined}
+                  aria-current={active === "scan" ? "page" : undefined}
+                >
+                  Scan QR
+                </Link>
+                <Link
+                  href="/student/history"
+                  className={active === "history" ? "is-active" : undefined}
+                  aria-current={active === "history" ? "page" : undefined}
+                >
+                  Attendance history
+                </Link>
+              </>
+            ) : (
+              <Link
+                href="/faculty#sections"
+                className={active === "sections" ? "is-active" : undefined}
+                aria-current={active === "sections" ? "page" : undefined}
+              >
+                My sections
+              </Link>
+            )}
+          </nav>
+        )}
+        <div className="app-header-actions">
+          <span className="app-user">
+            <span className="app-user-name">{name}</span>
+            <span className="app-user-role">{role}</span>
           </span>
           <form action={signOut}>
-            <button
-              className="button secondary !min-h-9 !px-3 !text-[11px]"
-              type="submit"
-            >
+            <button className="button secondary app-sign-out" type="submit">
               Sign out
             </button>
           </form>
