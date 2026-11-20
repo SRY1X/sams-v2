@@ -12,6 +12,7 @@ import {
   enrollStudent,
   inviteMember,
   setMembershipStatus,
+  updateTerm,
 } from "@/lib/academic/actions";
 
 function Field({
@@ -20,12 +21,14 @@ function Field({
   type = "text",
   required = true,
   placeholder,
+  defaultValue,
 }: {
   label: string;
   name: string;
   type?: string;
   required?: boolean;
   placeholder?: string;
+  defaultValue?: string;
 }) {
   return (
     <label className="block">
@@ -36,6 +39,7 @@ function Field({
         type={type}
         required={required}
         placeholder={placeholder}
+        defaultValue={defaultValue}
       />
     </label>
   );
@@ -290,6 +294,53 @@ export default async function AdminDashboard({
                       Add term
                     </button>
                   </form>
+                </Panel>
+                <Panel
+                  title="Update academic term dates"
+                  description="Keep existing sections linked to this term while adjusting its date range."
+                >
+                  {(terms ?? []).length ? (
+                    <div className="mt-4 space-y-4">
+                      {(terms ?? []).map((term) => (
+                        <form
+                          action={updateTerm}
+                          className="space-y-3 border-b border-[#2e2e2e] pb-4 last:border-0 last:pb-0"
+                          key={term.id}
+                        >
+                          <input name="id" type="hidden" value={term.id} />
+                          <Field
+                            label="Term name"
+                            name="name"
+                            defaultValue={term.name}
+                          />
+                          <div className="grid gap-3 sm:grid-cols-2">
+                            <Field
+                              label="Starts on"
+                              name="starts_on"
+                              type="date"
+                              defaultValue={term.starts_on}
+                            />
+                            <Field
+                              label="Ends on"
+                              name="ends_on"
+                              type="date"
+                              defaultValue={term.ends_on}
+                            />
+                          </div>
+                          <button
+                            className="button secondary !min-h-9 !text-[11px]"
+                            type="submit"
+                          >
+                            Save {term.name}
+                          </button>
+                        </form>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="mt-4 text-xs text-[#b4b4b4]">
+                      Add an academic term before editing its dates.
+                    </p>
+                  )}
                 </Panel>
                 <Panel
                   title="Add course"

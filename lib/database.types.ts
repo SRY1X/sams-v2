@@ -8,11 +8,29 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[];
 
-type Table<Row, Insert = Partial<Row>, Update = Partial<Insert>> = {
+type Relationship<
+  Name extends string,
+  Columns extends string[],
+  ReferencedRelation extends string,
+  ReferencedColumns extends string[],
+> = {
+  foreignKeyName: Name;
+  columns: Columns;
+  isOneToOne: false;
+  referencedRelation: ReferencedRelation;
+  referencedColumns: ReferencedColumns;
+};
+
+type Table<
+  Row,
+  Insert = Partial<Row>,
+  Update = Partial<Insert>,
+  Relationships extends Relationship<string, string[], string, string[]>[] = [],
+> = {
   Row: Row;
   Insert: Insert;
   Update: Update;
-  Relationships: [];
+  Relationships: Relationships;
 };
 
 export type Database = {
@@ -67,50 +85,194 @@ export type Database = {
         title: string;
         created_at: string;
       }>;
-      course_sections: Table<{
-        id: string;
-        institution_id: string;
-        course_id: string;
-        term_id: string;
-        section_code: string;
-        created_at: string;
-      }>;
-      section_faculty: Table<{
-        id: string;
-        institution_id: string;
-        section_id: string;
-        faculty_user_id: string;
-        member_role: "faculty";
-        created_at: string;
-      }>;
-      enrollments: Table<{
-        id: string;
-        institution_id: string;
-        section_id: string;
-        student_user_id: string;
-        member_role: "student";
-        status: string;
-        created_at: string;
-      }>;
-      attendance_sessions: Table<{
-        id: string;
-        institution_id: string;
-        section_id: string;
-        created_by: string;
-        status: string;
-        starts_at: string;
-        expires_at: string;
-        closed_at: string | null;
-        created_at: string;
-      }>;
-      attendance_records: Table<{
-        id: string;
-        institution_id: string;
-        session_id: string;
-        student_user_id: string;
-        recorded_at: string;
-        status: string;
-      }>;
+      course_sections: Table<
+        {
+          id: string;
+          institution_id: string;
+          course_id: string;
+          term_id: string;
+          section_code: string;
+          created_at: string;
+        },
+        Partial<{
+          id: string;
+          institution_id: string;
+          course_id: string;
+          term_id: string;
+          section_code: string;
+          created_at: string;
+        }>,
+        Partial<{
+          id: string;
+          institution_id: string;
+          course_id: string;
+          term_id: string;
+          section_code: string;
+          created_at: string;
+        }>,
+        [
+          Relationship<
+            "course_sections_course_id_institution_id_fkey",
+            ["course_id", "institution_id"],
+            "courses",
+            ["id", "institution_id"]
+          >,
+          Relationship<
+            "course_sections_term_id_institution_id_fkey",
+            ["term_id", "institution_id"],
+            "academic_terms",
+            ["id", "institution_id"]
+          >,
+        ]
+      >;
+      section_faculty: Table<
+        {
+          id: string;
+          institution_id: string;
+          section_id: string;
+          faculty_user_id: string;
+          member_role: "faculty";
+          created_at: string;
+        },
+        Partial<{
+          id: string;
+          institution_id: string;
+          section_id: string;
+          faculty_user_id: string;
+          member_role: "faculty";
+          created_at: string;
+        }>,
+        Partial<{
+          id: string;
+          institution_id: string;
+          section_id: string;
+          faculty_user_id: string;
+          member_role: "faculty";
+          created_at: string;
+        }>,
+        [
+          Relationship<
+            "section_faculty_section_id_institution_id_fkey",
+            ["section_id", "institution_id"],
+            "course_sections",
+            ["id", "institution_id"]
+          >,
+        ]
+      >;
+      enrollments: Table<
+        {
+          id: string;
+          institution_id: string;
+          section_id: string;
+          student_user_id: string;
+          member_role: "student";
+          status: string;
+          created_at: string;
+        },
+        Partial<{
+          id: string;
+          institution_id: string;
+          section_id: string;
+          student_user_id: string;
+          member_role: "student";
+          status: string;
+          created_at: string;
+        }>,
+        Partial<{
+          id: string;
+          institution_id: string;
+          section_id: string;
+          student_user_id: string;
+          member_role: "student";
+          status: string;
+          created_at: string;
+        }>,
+        [
+          Relationship<
+            "enrollments_section_id_institution_id_fkey",
+            ["section_id", "institution_id"],
+            "course_sections",
+            ["id", "institution_id"]
+          >,
+        ]
+      >;
+      attendance_sessions: Table<
+        {
+          id: string;
+          institution_id: string;
+          section_id: string;
+          created_by: string;
+          status: string;
+          starts_at: string;
+          expires_at: string;
+          closed_at: string | null;
+          created_at: string;
+        },
+        Partial<{
+          id: string;
+          institution_id: string;
+          section_id: string;
+          created_by: string;
+          status: string;
+          starts_at: string;
+          expires_at: string;
+          closed_at: string | null;
+          created_at: string;
+        }>,
+        Partial<{
+          id: string;
+          institution_id: string;
+          section_id: string;
+          created_by: string;
+          status: string;
+          starts_at: string;
+          expires_at: string;
+          closed_at: string | null;
+          created_at: string;
+        }>,
+        [
+          Relationship<
+            "attendance_sessions_section_id_institution_id_fkey",
+            ["section_id", "institution_id"],
+            "course_sections",
+            ["id", "institution_id"]
+          >,
+        ]
+      >;
+      attendance_records: Table<
+        {
+          id: string;
+          institution_id: string;
+          session_id: string;
+          student_user_id: string;
+          recorded_at: string;
+          status: string;
+        },
+        Partial<{
+          id: string;
+          institution_id: string;
+          session_id: string;
+          student_user_id: string;
+          recorded_at: string;
+          status: string;
+        }>,
+        Partial<{
+          id: string;
+          institution_id: string;
+          session_id: string;
+          student_user_id: string;
+          recorded_at: string;
+          status: string;
+        }>,
+        [
+          Relationship<
+            "attendance_records_session_id_institution_id_fkey",
+            ["session_id", "institution_id"],
+            "attendance_sessions",
+            ["id", "institution_id"]
+          >,
+        ]
+      >;
       audit_events: Table<{
         id: string;
         institution_id: string;

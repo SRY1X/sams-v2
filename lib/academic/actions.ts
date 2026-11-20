@@ -55,6 +55,35 @@ export async function createTerm(form: FormData) {
   finishAdmin(error ? "save-failed" : "saved");
 }
 
+export async function updateTerm(form: FormData) {
+  const member = await requireMembership("admin");
+  const parsed = z
+    .object({
+      id: uuid,
+      name: requiredText(2, 100),
+      starts_on: z.iso.date(),
+      ends_on: z.iso.date(),
+    })
+    .safeParse({
+      id: text(form, "id"),
+      name: text(form, "name"),
+      starts_on: text(form, "starts_on"),
+      ends_on: text(form, "ends_on"),
+    });
+  if (!parsed.success || parsed.data.starts_on >= parsed.data.ends_on)
+    finishAdmin("invalid");
+  const { id, ...changes } = parsed.data;
+  const { data, error } = await member.supabase
+    .from("academic_terms")
+    .update(changes)
+    .eq("id", id)
+    .eq("institution_id", member.institution_id)
+    .select("id")
+    .maybeSingle();
+  revalidatePath("/faculty");
+  finishAdmin(error || !data ? "save-failed" : "saved");
+}
+
 export async function createCourse(form: FormData) {
   const member = await requireMembership("admin");
   const parsed = z

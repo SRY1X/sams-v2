@@ -6,7 +6,7 @@ import { requireSupabaseData } from "@/lib/supabase/errors";
 
 export default async function StudentDashboard() {
   const member = await requireMembership("student");
-  const [profileResult, institutionResult, enrollmentsResult] =
+  const [profileResult, institutionResult, enrollmentsResult, recordsResult] =
     await Promise.all([
       member.supabase
         .from("profiles")
@@ -20,9 +20,30 @@ export default async function StudentDashboard() {
         .maybeSingle(),
       member.supabase
         .from("enrollments")
-        .select("section_id,status")
+        .select(
+          `section_id, section:course_sections!enrollments_section_id_institution_id_fkey!inner(
+          id,term_id,section_code,
+          course:courses!course_sections_course_id_institution_id_fkey(id,code,title),
+          term:academic_terms!course_sections_term_id_institution_id_fkey(id,name)
+        )`,
+        )
         .eq("student_user_id", member.user_id)
         .eq("status", "active"),
+      member.supabase
+        .from("attendance_records")
+        .select(
+          `session_id,recorded_at,status,
+          session:attendance_sessions!attendance_records_session_id_institution_id_fkey(
+            starts_at,
+            section:course_sections!attendance_sessions_section_id_institution_id_fkey(
+              section_code,
+              course:courses!course_sections_course_id_institution_id_fkey(id,code,title)
+            )
+          )`,
+        )
+        .eq("student_user_id", member.user_id)
+        .order("recorded_at", { ascending: false })
+        .limit(8),
     ]);
   const profile = requireSupabaseData(profileResult, "student profile");
   const institution = requireSupabaseData(
@@ -33,84 +54,10 @@ export default async function StudentDashboard() {
     enrollmentsResult,
     "student enrollment list",
   );
-  const sectionIds = (enrollments ?? []).map((row) => row.section_id);
-  const sections = sectionIds.length
-    ? requireSupabaseData(
-        await member.supabase
-          .from("course_sections")
-          .select("id,course_id,term_id,section_code")
-          .in("id", sectionIds),
-        "student section list",
-      )
-    : [];
-  const courseIds = [...new Set((sections ?? []).map((row) => row.course_id))];
-  const termIds = [...new Set((sections ?? []).map((row) => row.term_id))];
-  const [coursesResult, termsResult, recordsResult] = await Promise.all([
-    courseIds.length
-      ? member.supabase
-          .from("courses")
-          .select("id,code,title")
-          .in("id", courseIds)
-      : Promise.resolve({ data: [], error: null }),
-    termIds.length
-      ? member.supabase
-          .from("academic_terms")
-          .select("id,name")
-          .in("id", termIds)
-      : Promise.resolve({ data: [], error: null }),
-    member.supabase
-      .from("attendance_records")
-      .select("session_id,recorded_at,status")
-      .eq("student_user_id", member.user_id)
-      .order("recorded_at", { ascending: false })
-      .limit(8),
-  ]);
-  const courses = requireSupabaseData(coursesResult, "student course list");
-  const terms = requireSupabaseData(termsResult, "student term list");
   const records = requireSupabaseData(recordsResult, "student attendance list");
-  const sessionIds = [...new Set((records ?? []).map((row) => row.session_id))];
-  const sessions = sessionIds.length
-    ? requireSupabaseData(
-        await member.supabase
-          .from("attendance_sessions")
-          .select("id,section_id,starts_at")
-          .in("id", sessionIds),
-        "attendance session list",
-      )
-    : [];
-  const historySectionIds = [
-    ...new Set((sessions ?? []).map((row) => row.section_id)),
-  ];
-  const historySections = historySectionIds.length
-    ? requireSupabaseData(
-        await member.supabase
-          .from("course_sections")
-          .select("id,course_id,section_code")
-          .in("id", historySectionIds),
-        "attendance history section list",
-      )
-    : [];
-  const historyCourseIds = [
-    ...new Set((historySections ?? []).map((row) => row.course_id)),
-  ];
-  const historyCourses = historyCourseIds.length
-    ? requireSupabaseData(
-        await member.supabase
-          .from("courses")
-          .select("id,code,title")
-          .in("id", historyCourseIds),
-        "attendance history course list",
-      )
-    : [];
-  const courseById = new Map(
-    [...(courses ?? []), ...(historyCourses ?? [])].map((row) => [row.id, row]),
+  const sectionCards = (enrollments ?? []).flatMap((row) =>
+    row.section ? [row.section] : [],
   );
-  const termById = new Map((terms ?? []).map((row) => [row.id, row.name]));
-  const sessionById = new Map((sessions ?? []).map((row) => [row.id, row]));
-  const historySectionById = new Map(
-    (historySections ?? []).map((row) => [row.id, row]),
-  );
-  const sectionCards = sections ?? [];
   const presentCount = records?.length ?? 0;
 
   return (
@@ -180,7 +127,7 @@ export default async function StudentDashboard() {
             {sectionCards.length ? (
               <div className="divide-y divide-[#2e2e2e]">
                 {sectionCards.map((section) => {
-                  const course = courseById.get(section.course_id);
+                  const course = section.course;
                   return (
                     <div
                       key={section.id}
@@ -195,7 +142,7 @@ export default async function StudentDashboard() {
                         </p>
                         <p className="mt-1 text-[11px] text-[#b4b4b4]">
                           {course?.code ?? ""} · Section {section.section_code}{" "}
-                          · {termById.get(section.term_id) ?? "Academic term"}
+                          · {section.term?.name ?? "Academic term"}
                         </p>
                       </div>
                       <span className="badge">Enrolled</span>
@@ -223,13 +170,7 @@ export default async function StudentDashboard() {
             {records?.length ? (
               <div className="divide-y divide-[#2e2e2e]">
                 {records.slice(0, 5).map((record) => {
-                  const session = sessionById.get(record.session_id);
-                  const section = session
-                    ? historySectionById.get(session.section_id)
-                    : undefined;
-                  const course = section
-                    ? courseById.get(section.course_id)
-                    : undefined;
+                  const course = record.session?.section?.course;
                   return (
                     <div
                       key={record.session_id}

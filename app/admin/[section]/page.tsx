@@ -37,6 +37,25 @@ export default async function AdminRecordsPage({
   const q = typeof query.q === "string" ? query.q.trim().toLowerCase() : "";
   const statusFilter = typeof query.status === "string" ? query.status : "";
   const groupFilter = typeof query.group === "string" ? query.group : "";
+  const needsMembers = ["students", "faculty", "enrollments"].includes(section);
+  const needsDepartments = ["departments", "courses", "sections"].includes(
+    section,
+  );
+  const needsTerms = [
+    "terms",
+    "sections",
+    "enrollments",
+    "attendance",
+  ].includes(section);
+  const needsCourses = [
+    "courses",
+    "sections",
+    "enrollments",
+    "attendance",
+  ].includes(section);
+  const needsSections = ["sections", "enrollments", "attendance"].includes(
+    section,
+  );
   const [
     profileResult,
     institutionResult,
@@ -61,64 +80,85 @@ export default async function AdminRecordsPage({
       .select("name,timezone")
       .eq("id", member.institution_id)
       .maybeSingle(),
-    member.supabase
-      .from("departments")
-      .select("id,name,code")
-      .eq("institution_id", member.institution_id)
-      .order("name")
-      .limit(500),
-    member.supabase
-      .from("academic_terms")
-      .select("id,name,starts_on,ends_on")
-      .eq("institution_id", member.institution_id)
-      .order("starts_on", { ascending: false })
-      .limit(500),
-    member.supabase
-      .from("courses")
-      .select("id,code,title,department_id")
-      .eq("institution_id", member.institution_id)
-      .order("code")
-      .limit(500),
-    member.supabase
-      .from("course_sections")
-      .select("id,course_id,term_id,section_code")
-      .eq("institution_id", member.institution_id)
-      .order("section_code")
-      .limit(500),
-    member.supabase
-      .from("institution_memberships")
-      .select("id,user_id,role,status,created_at")
-      .eq("institution_id", member.institution_id)
-      .order("created_at", { ascending: false })
-      .limit(500),
-    member.supabase
-      .from("enrollments")
-      .select("id,section_id,student_user_id,status")
-      .eq("institution_id", member.institution_id)
-      .order("created_at", { ascending: false })
-      .limit(1000),
-    member.supabase
-      .from("attendance_sessions")
-      .select("id,section_id,status,starts_at,expires_at,closed_at")
-      .eq("institution_id", member.institution_id)
-      .order("starts_at", { ascending: false })
-      .limit(500),
-    member.supabase
-      .from("section_faculty")
-      .select("section_id,faculty_user_id")
-      .eq("institution_id", member.institution_id)
-      .limit(1000),
-    member.supabase
-      .from("attendance_records")
-      .select("session_id")
-      .eq("institution_id", member.institution_id)
-      .limit(5000),
-    member.supabase
-      .from("audit_events")
-      .select("id,action,entity_type,created_at")
-      .eq("institution_id", member.institution_id)
-      .order("created_at", { ascending: false })
-      .limit(500),
+    needsDepartments
+      ? member.supabase
+          .from("departments")
+          .select("id,name,code")
+          .eq("institution_id", member.institution_id)
+          .order("name")
+          .limit(500)
+      : Promise.resolve({ data: [], error: null }),
+    needsTerms
+      ? member.supabase
+          .from("academic_terms")
+          .select("id,name,starts_on,ends_on")
+          .eq("institution_id", member.institution_id)
+          .order("starts_on", { ascending: false })
+          .limit(500)
+      : Promise.resolve({ data: [], error: null }),
+    needsCourses
+      ? member.supabase
+          .from("courses")
+          .select("id,code,title,department_id")
+          .eq("institution_id", member.institution_id)
+          .order("code")
+          .limit(500)
+      : Promise.resolve({ data: [], error: null }),
+    needsSections
+      ? member.supabase
+          .from("course_sections")
+          .select("id,course_id,term_id,section_code")
+          .eq("institution_id", member.institution_id)
+          .order("section_code")
+          .limit(500)
+      : Promise.resolve({ data: [], error: null }),
+    needsMembers
+      ? member.supabase
+          .from("institution_memberships")
+          .select("id,user_id,role,status,created_at")
+          .eq("institution_id", member.institution_id)
+          .eq("role", section === "faculty" ? "faculty" : "student")
+          .order("created_at", { ascending: false })
+          .limit(500)
+      : Promise.resolve({ data: [], error: null }),
+    section === "enrollments"
+      ? member.supabase
+          .from("enrollments")
+          .select("id,section_id,student_user_id,status")
+          .eq("institution_id", member.institution_id)
+          .order("created_at", { ascending: false })
+          .limit(1000)
+      : Promise.resolve({ data: [], error: null }),
+    section === "attendance"
+      ? member.supabase
+          .from("attendance_sessions")
+          .select("id,section_id,status,starts_at,expires_at,closed_at")
+          .eq("institution_id", member.institution_id)
+          .order("starts_at", { ascending: false })
+          .limit(500)
+      : Promise.resolve({ data: [], error: null }),
+    section === "faculty"
+      ? member.supabase
+          .from("section_faculty")
+          .select("section_id,faculty_user_id")
+          .eq("institution_id", member.institution_id)
+          .limit(1000)
+      : Promise.resolve({ data: [], error: null }),
+    section === "attendance"
+      ? member.supabase
+          .from("attendance_records")
+          .select("session_id")
+          .eq("institution_id", member.institution_id)
+          .limit(5000)
+      : Promise.resolve({ data: [], error: null }),
+    section === "activity"
+      ? member.supabase
+          .from("audit_events")
+          .select("id,action,entity_type,created_at")
+          .eq("institution_id", member.institution_id)
+          .order("created_at", { ascending: false })
+          .limit(500)
+      : Promise.resolve({ data: [], error: null }),
   ]);
   const profile = requireSupabaseData(profileResult, "administrator profile");
   const institution = requireSupabaseData(

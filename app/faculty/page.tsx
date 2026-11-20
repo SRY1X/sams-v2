@@ -2,12 +2,17 @@ import Link from "next/link";
 import { AppHeader } from "@/components/app-header";
 import { AttendanceQr } from "@/components/attendance-qr";
 import { LiveAttendanceList } from "@/components/live-attendance-list";
+import { StartAttendanceButton } from "@/components/start-attendance-button";
 import { formatInstitutionDateTime } from "@/lib/config/format";
 import {
   closeAttendanceSession,
   startAttendanceSession,
 } from "@/lib/attendance/actions";
 import { selectActiveSession } from "@/lib/attendance/dashboard";
+import {
+  getDateInTimeZone,
+  isAcademicTermActive,
+} from "@/lib/attendance/session-start";
 import { requireMembership } from "@/lib/auth/session";
 import { requireSupabaseData } from "@/lib/supabase/errors";
 
@@ -32,7 +37,13 @@ export default async function FacultyDashboard({
         .maybeSingle(),
       member.supabase
         .from("section_faculty")
-        .select("section_id")
+        .select(
+          `section:course_sections!section_faculty_section_id_institution_id_fkey!inner(
+            id,term_id,section_code,
+            course:courses!course_sections_course_id_institution_id_fkey(id,code,title),
+            term:academic_terms!course_sections_term_id_institution_id_fkey(id,name,starts_on,ends_on)
+          )`,
+        )
         .eq("institution_id", member.institution_id)
         .eq("faculty_user_id", member.user_id),
     ]);
@@ -41,56 +52,32 @@ export default async function FacultyDashboard({
     institutionResult,
     "institution details",
   );
-  const assignments = requireSupabaseData(
+  const assignmentRows = requireSupabaseData(
     assignmentsResult,
     "faculty assignment list",
   );
-  const sectionIds = (assignments ?? []).map((row) => row.section_id);
-  const sections = sectionIds.length
-    ? requireSupabaseData(
-        await member.supabase
-          .from("course_sections")
-          .select("id,course_id,term_id,section_code")
-          .in("id", sectionIds),
-        "assigned section list",
-      )
-    : [];
-  const courseIds = [...new Set((sections ?? []).map((row) => row.course_id))];
-  const termIds = [...new Set((sections ?? []).map((row) => row.term_id))];
-  const nowIso = new Date().toISOString();
-  const [coursesResult, termsResult, enrollmentsResult, openSessionsResult] =
-    await Promise.all([
-      courseIds.length
-        ? member.supabase
-            .from("courses")
-            .select("id,code,title")
-            .in("id", courseIds)
-        : Promise.resolve({ data: [], error: null }),
-      termIds.length
-        ? member.supabase
-            .from("academic_terms")
-            .select("id,name")
-            .in("id", termIds)
-        : Promise.resolve({ data: [], error: null }),
-      sectionIds.length
-        ? member.supabase
-            .from("enrollments")
-            .select("section_id,student_user_id")
-            .in("section_id", sectionIds)
-            .eq("status", "active")
-        : Promise.resolve({ data: [], error: null }),
-      sectionIds.length
-        ? member.supabase
-            .from("attendance_sessions")
-            .select("id,section_id,status,expires_at,starts_at")
-            .in("section_id", sectionIds)
-            .eq("status", "open")
-            .gt("expires_at", nowIso)
-            .order("starts_at", { ascending: false })
-        : Promise.resolve({ data: [], error: null }),
-    ]);
-  const courses = requireSupabaseData(coursesResult, "assigned course list");
-  const terms = requireSupabaseData(termsResult, "assigned term list");
+  const sections = (assignmentRows ?? []).flatMap((row) =>
+    row.section ? [row.section] : [],
+  );
+  const sectionIds = sections.map((row) => row.id);
+  const [enrollmentsResult, openSessionsResult] = await Promise.all([
+    sectionIds.length
+      ? member.supabase
+          .from("enrollments")
+          .select("section_id")
+          .in("section_id", sectionIds)
+          .eq("status", "active")
+      : Promise.resolve({ data: [], error: null }),
+    sectionIds.length
+      ? member.supabase
+          .from("attendance_sessions")
+          .select("id,section_id,status,expires_at,starts_at")
+          .in("section_id", sectionIds)
+          .eq("status", "open")
+          .gt("expires_at", new Date().toISOString())
+          .order("starts_at", { ascending: false })
+      : Promise.resolve({ data: [], error: null }),
+  ]);
   const enrollments = requireSupabaseData(
     enrollmentsResult,
     "section enrollment list",
@@ -99,19 +86,17 @@ export default async function FacultyDashboard({
     openSessionsResult,
     "active attendance session list",
   );
-  const courseMap = new Map((courses ?? []).map((row) => [row.id, row]));
-  const termMap = new Map((terms ?? []).map((row) => [row.id, row.name]));
   const openSessionBySection = new Map(
     (openSessions ?? []).map((row) => [row.section_id, row]),
   );
   const selectedId = typeof query.session === "string" ? query.session : "";
   const activeSession = selectActiveSession(openSessions ?? [], selectedId);
   const selectedSection = activeSession
-    ? (sections ?? []).find((row) => row.id === activeSession.section_id)
+    ? sections.find((row) => row.id === activeSession.section_id)
     : undefined;
-  const selectedCourse = selectedSection
-    ? courseMap.get(selectedSection.course_id)
-    : undefined;
+  const selectedCourse = selectedSection?.course;
+  const timezone = institution?.timezone ?? "UTC";
+  const institutionDate = getDateInTimeZone(new Date(), timezone);
   const studentsPerSection = new Map<string, number>();
   for (const item of enrollments ?? [])
     studentsPerSection.set(
@@ -143,8 +128,10 @@ export default async function FacultyDashboard({
           </span>
         </div>
         {error && (
-          <div className="error-box mt-6">
-            The action could not be completed. Refresh and try again.
+          <div className="error-box mt-6" role="alert">
+            {error === "term-inactive"
+              ? "Attendance is unavailable because this section’s academic term is not active. Ask an administrator to update the term dates."
+              : "The action could not be completed. Refresh and try again."}
           </div>
         )}
         {query.closed && (
@@ -225,12 +212,10 @@ export default async function FacultyDashboard({
                   Active sessions
                 </span>
                 {(openSessions ?? []).map((session) => {
-                  const section = (sections ?? []).find(
+                  const section = sections.find(
                     (item) => item.id === session.section_id,
                   );
-                  const course = section
-                    ? courseMap.get(section.course_id)
-                    : undefined;
+                  const course = section?.course;
                   if (!section) return null;
                   return (
                     <Link
@@ -276,8 +261,16 @@ export default async function FacultyDashboard({
             </div>
           </div>
           <div className="grid gap-4 md:grid-cols-2">
-            {sections?.map((section) => {
-              const course = courseMap.get(section.course_id);
+            {sections.map((section) => {
+              const course = section.course;
+              const term = section.term;
+              const termActive =
+                term !== null &&
+                isAcademicTermActive(
+                  term.starts_on,
+                  term.ends_on,
+                  institutionDate,
+                );
               const openSession = openSessionBySection.get(section.id);
               return (
                 <article key={section.id} className="surface p-5">
@@ -301,7 +294,7 @@ export default async function FacultyDashboard({
                   </div>
                   <div className="mt-5 flex items-center justify-between border-t border-[#2e2e2e] pt-4">
                     <p className="text-[10px] text-[#b4b4b4]">
-                      {termMap.get(section.term_id) ?? "Academic term"}
+                      {term?.name ?? "Academic term"}
                     </p>
                     {openSession ? (
                       <Link
@@ -312,6 +305,17 @@ export default async function FacultyDashboard({
                           ? "Session active"
                           : "View live QR →"}
                       </Link>
+                    ) : !termActive ? (
+                      <span
+                        className="badge neutral"
+                        title={
+                          term
+                            ? `${term.starts_on} — ${term.ends_on}`
+                            : "The academic term could not be loaded"
+                        }
+                      >
+                        Term inactive
+                      </span>
                     ) : (
                       <form action={startAttendanceSession}>
                         <input
@@ -319,19 +323,14 @@ export default async function FacultyDashboard({
                           name="section_id"
                           value={section.id}
                         />
-                        <button
-                          className="button !min-h-9 !px-3 !text-[11px]"
-                          type="submit"
-                        >
-                          Start attendance <span aria-hidden="true">→</span>
-                        </button>
+                        <StartAttendanceButton />
                       </form>
                     )}
                   </div>
                 </article>
               );
             })}
-            {!sections?.length && (
+            {!sections.length && (
               <div className="surface col-span-full px-6 py-12 text-center">
                 <p className="font-bold">No sections assigned yet</p>
                 <p className="mt-2 text-xs text-[#b4b4b4]">

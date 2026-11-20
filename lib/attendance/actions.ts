@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
+import { classifySessionStartError } from "@/lib/attendance/session-start";
 import { requireMembership } from "@/lib/auth/session";
 
 export async function startAttendanceSession(formData: FormData) {
@@ -16,6 +17,10 @@ export async function startAttendanceSession(formData: FormData) {
     { p_section_id: sectionId.data },
   );
   if (error || !data) {
+    if (classifySessionStartError(error) === "inactive-term") {
+      redirect("/faculty?error=term-inactive");
+    }
+
     const { data: existing } = await member.supabase
       .from("attendance_sessions")
       .select("id")
