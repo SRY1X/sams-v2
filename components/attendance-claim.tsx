@@ -1,8 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { Brand } from "@/components/brand";
+import { AttendancePerformanceDiagnostics } from "@/components/attendance/performance-diagnostics";
+import type {
+  AttendanceDiagnosticMetricKey,
+  AttendanceDiagnosticOutcome,
+} from "@/components/attendance/performance-diagnostics";
+import { parseAttendanceServerTiming } from "@/lib/attendance/performance";
 
 function readHashToken() {
   return new URLSearchParams(window.location.hash.slice(1)).get("token") ?? "";
@@ -30,7 +36,11 @@ function createTokenStore() {
   };
 }
 
-export function AttendanceClaim() {
+export function AttendanceClaim({
+  diagnosticsEnabled,
+}: {
+  diagnosticsEnabled: boolean;
+}) {
   const [tokenStore] = useState(createTokenStore);
   const token = useSyncExternalStore(
     tokenStore.subscribe,
@@ -41,6 +51,16 @@ export function AttendanceClaim() {
   const [kind, setKind] = useState<"busy" | "success" | "error" | "signin">(
     "busy",
   );
+  const [diagnosticMetrics, setDiagnosticMetrics] = useState<
+    Partial<Record<AttendanceDiagnosticMetricKey, number | undefined>>
+  >({});
+  const [diagnosticOutcome, setDiagnosticOutcome] =
+    useState<AttendanceDiagnosticOutcome>();
+  const diagnosticsEnabledRef = useRef(diagnosticsEnabled);
+
+  useEffect(() => {
+    diagnosticsEnabledRef.current = diagnosticsEnabled;
+  }, [diagnosticsEnabled]);
 
   useEffect(() => {
     if (!token) return;
@@ -55,27 +75,49 @@ export function AttendanceClaim() {
     if (!token) return;
     window.history.replaceState(null, "", "/attendance/claim");
     let active = true;
+    const claimStartedAt = performance.now();
     void fetch("/api/attendance/claim", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ token }),
       cache: "no-store",
     })
-      .then(async (response) => ({
-        response,
-        body: (await response.json()) as { status?: string; error?: string },
-      }))
-      .then(({ response, body }) => {
+      .then(async (response) => {
+        const body = (await response.json()) as {
+          status?: string;
+          error?: string;
+        };
         if (!active) return;
+        if (diagnosticsEnabledRef.current) {
+          const timing = parseAttendanceServerTiming(
+            response.headers.get("Server-Timing"),
+          );
+          setDiagnosticMetrics({
+            claimRoundTripMs: performance.now() - claimStartedAt,
+            authMs: timing.authMs,
+            dbMs: timing.dbMs,
+            serverTotalMs: timing.serverTotalMs,
+          });
+        }
         if (response.status === 401) {
+          if (diagnosticsEnabledRef.current) setDiagnosticOutcome("claim_auth");
           setKind("signin");
           setState(
             "Sign in with your student account, then scan the QR code again.",
           );
           return;
         }
-        if (!response.ok)
-          throw new Error(body.error ?? "This QR code is invalid or expired.");
+        if (!response.ok) {
+          if (diagnosticsEnabledRef.current)
+            setDiagnosticOutcome("claim_rejected");
+          setKind("error");
+          setState(body.error ?? "This QR code is invalid or expired.");
+          return;
+        }
+        if (diagnosticsEnabledRef.current)
+          setDiagnosticOutcome(
+            body.status === "already_recorded" ? "already_recorded" : "success",
+          );
         setKind("success");
         setState(
           body.status === "already_recorded"
@@ -85,6 +127,16 @@ export function AttendanceClaim() {
       })
       .catch((error: unknown) => {
         if (active) {
+          if (diagnosticsEnabledRef.current) {
+            setDiagnosticMetrics((previous) => ({
+              ...previous,
+              claimRoundTripMs: performance.now() - claimStartedAt,
+              authMs: undefined,
+              dbMs: undefined,
+              serverTotalMs: undefined,
+            }));
+            setDiagnosticOutcome("claim_network");
+          }
           setKind("error");
           setState(
             error instanceof Error
@@ -137,6 +189,11 @@ export function AttendanceClaim() {
             Open student dashboard
           </Link>
         )}
+        <AttendancePerformanceDiagnostics
+          enabled={diagnosticsEnabled}
+          metrics={diagnosticMetrics}
+          outcome={diagnosticOutcome}
+        />
         <p className="mt-8 border-t border-[#2e2e2e] pt-5 text-[10px] leading-5 text-[#898989]">
           QR codes expire quickly and can be used once per student for each
           session.
