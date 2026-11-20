@@ -20,14 +20,14 @@ export default async function LoginPage({
   const error = typeof query.error === "string" ? query.error : "";
   return (
     <main className="grid min-h-screen lg:grid-cols-[1fr_.9fr]">
-      <aside className="relative hidden overflow-hidden bg-[#0a0a0a] p-12 text-white lg:flex lg:flex-col lg:justify-between">
+      <aside className="relative hidden overflow-hidden bg-[#121212] p-12 text-white lg:flex lg:flex-col lg:justify-between">
         <div className="absolute -right-40 top-24 size-[560px] rounded-full border border-white/10" />
         <div className="absolute -right-20 top-44 size-[330px] rounded-full border border-white/10" />
         <Link href="/">
           <Brand inverse />
         </Link>
         <div className="relative max-w-[520px] pb-14">
-          <div className="eyebrow !text-[#a1a1a1]">
+          <div className="eyebrow !text-[#b4b4b4]">
             A better campus workflow
           </div>
           <h1 className="mt-6 text-5xl font-semibold leading-[1.03] tracking-[-.055em]">
@@ -73,7 +73,7 @@ export default async function LoginPage({
           <h2 className="mt-3 text-3xl font-bold tracking-tight">
             Sign in to SAMS
           </h2>
-          <p className="mt-2 text-sm text-[#a1a1a1]">
+          <p className="mt-2 text-sm text-[#b4b4b4]">
             Use the account provided by your institution.
           </p>
           {error && (
@@ -87,7 +87,7 @@ export default async function LoginPage({
           )}
           {query.reset === "sent" && (
             <div
-              className="mt-6 rounded-lg border border-[#262626] bg-[#142019] p-3 text-xs text-[#7cc9a0]"
+              className="mt-6 rounded-lg border border-[#2e2e2e] bg-[#102b1e] p-3 text-xs text-[#3ecf8e]"
               role="status"
             >
               If the account exists, a password reset email is on its way.
@@ -95,7 +95,7 @@ export default async function LoginPage({
           )}
           {query.reset === "complete" && (
             <div
-              className="mt-6 rounded-lg border border-[#262626] bg-[#142019] p-3 text-xs text-[#7cc9a0]"
+              className="mt-6 rounded-lg border border-[#2e2e2e] bg-[#102b1e] p-3 text-xs text-[#3ecf8e]"
               role="status"
             >
               Password reset complete. Sign in with your new password.
@@ -138,7 +138,7 @@ export default async function LoginPage({
             </button>
           </form>
           <form action={requestPasswordReset} className="mt-4 text-center">
-            <details className="group text-xs text-[#ff8833]">
+            <details className="group text-xs text-[#3ecf8e]">
               <summary className="cursor-pointer list-none">
                 Forgot password?
               </summary>
@@ -163,13 +163,13 @@ export default async function LoginPage({
               </div>
             </details>
           </form>
-          <p className="mt-8 border-t border-[#262626] pt-6 text-center text-xs leading-5 text-[#a1a1a1]">
+          <p className="mt-8 border-t border-[#2e2e2e] pt-6 text-center text-xs leading-5 text-[#b4b4b4]">
             Accounts are provided by your institution. Need access? Contact your
             academic administrator.
           </p>
           <Link
             href="/"
-            className="mt-7 block text-center text-[11px] font-semibold text-[#a1a1a1]"
+            className="mt-7 block text-center text-[11px] font-semibold text-[#b4b4b4]"
           >
             ← Back to SAMS overview
           </Link>

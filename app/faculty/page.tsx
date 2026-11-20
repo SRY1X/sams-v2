@@ -122,7 +122,11 @@ export default async function FacultyDashboard({
 
   return (
     <>
-      <AppHeader role="faculty" name={profile?.display_name ?? "Faculty"} />
+      <AppHeader
+        role="faculty"
+        name={profile?.display_name ?? "Faculty"}
+        active="sections"
+      />
       <main className="shell py-9 sm:py-12">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
@@ -130,7 +134,7 @@ export default async function FacultyDashboard({
             <h1 className="mt-2 text-3xl font-bold tracking-tight">
               Your teaching day
             </h1>
-            <p className="mt-2 text-sm text-[#a1a1a1]">
+            <p className="mt-2 text-sm text-[#b4b4b4]">
               Start a secure attendance session or review a class roster.
             </p>
           </div>
@@ -145,7 +149,7 @@ export default async function FacultyDashboard({
         )}
         {query.closed && (
           <div
-            className="mt-6 rounded-lg border border-[#244332] bg-[#142019] p-3 text-sm text-[#7cc9a0]"
+            className="mt-6 rounded-lg border border-[#1f4b37] bg-[#102b1e] p-3 text-sm text-[#3ecf8e]"
             role="status"
           >
             Session closed. Any other active session is ready below.
@@ -158,14 +162,14 @@ export default async function FacultyDashboard({
           <div className="surface p-4 sm:p-5">
             <p className="eyebrow">Assigned sections</p>
             <p className="mt-3 text-2xl font-bold">{sections?.length ?? 0}</p>
-            <p className="mt-1 text-xs text-[#a1a1a1]">Available to manage</p>
+            <p className="mt-1 text-xs text-[#b4b4b4]">Available to manage</p>
           </div>
           <div className="surface p-4 sm:p-5">
             <p className="eyebrow">Live sessions</p>
             <p className="mt-3 text-2xl font-bold">
               {openSessions?.length ?? 0}
             </p>
-            <p className="mt-1 text-xs text-[#a1a1a1]">
+            <p className="mt-1 text-xs text-[#b4b4b4]">
               Open attendance windows
             </p>
           </div>
@@ -177,23 +181,23 @@ export default async function FacultyDashboard({
                 0,
               )}
             </p>
-            <p className="mt-1 text-xs text-[#a1a1a1]">
+            <p className="mt-1 text-xs text-[#b4b4b4]">
               Across assigned sections
             </p>
           </div>
         </section>
         {activeSession && selectedSection && (
-          <section className="surface mt-8 overflow-hidden">
-            <div className="flex flex-wrap items-start justify-between gap-4 border-b border-[#262626] p-5 sm:p-6">
+          <section id="attendance" className="surface mt-8 overflow-hidden">
+            <div className="flex flex-wrap items-start justify-between gap-4 border-b border-[#2e2e2e] p-5 sm:p-6">
               <div>
                 <p className="eyebrow">Live attendance session</p>
                 <h2 className="mt-2 text-xl font-bold">
                   {selectedCourse?.title ?? "Class session"}{" "}
-                  <span className="text-[#a1a1a1]">
+                  <span className="text-[#b4b4b4]">
                     · {selectedSection.section_code}
                   </span>
                 </h2>
-                <p className="mt-2 text-xs text-[#a1a1a1]">
+                <p className="mt-2 text-xs text-[#b4b4b4]">
                   Session ends{" "}
                   {formatInstitutionDateTime(
                     activeSession.expires_at,
@@ -214,10 +218,10 @@ export default async function FacultyDashboard({
             </div>
             {(openSessions ?? []).length > 1 && (
               <nav
-                className="flex flex-wrap items-center gap-2 border-b border-[#262626] px-5 py-3 sm:px-6"
+                className="flex flex-wrap items-center gap-2 border-b border-[#2e2e2e] px-5 py-3 sm:px-6"
                 aria-label="Switch active attendance session"
               >
-                <span className="mr-1 text-[11px] text-[#a1a1a1]">
+                <span className="mr-1 text-[11px] text-[#b4b4b4]">
                   Active sessions
                 </span>
                 {(openSessions ?? []).map((session) => {
@@ -231,9 +235,9 @@ export default async function FacultyDashboard({
                   return (
                     <Link
                       key={session.id}
-                      className={`badge neutral transition-colors hover:border-[#7cc9a0] hover:text-[#7cc9a0] ${
+                      className={`badge neutral transition-colors hover:border-[#3ecf8e] hover:text-[#3ecf8e] ${
                         session.id === activeSession.id
-                          ? "!border-[#244332] !bg-[#142019] !text-[#7cc9a0]"
+                          ? "!border-[#1f4b37] !bg-[#102b1e] !text-[#3ecf8e]"
                           : ""
                       }`}
                       href={`/faculty?session=${session.id}`}
@@ -250,7 +254,7 @@ export default async function FacultyDashboard({
             <div className="grid gap-8 p-5 sm:p-6 lg:grid-cols-[280px_1fr]">
               <div className="text-center">
                 <AttendanceQr sessionId={activeSession.id} />
-                <p className="mx-auto mt-3 max-w-[240px] text-[10px] leading-5 text-[#a1a1a1]">
+                <p className="mx-auto mt-3 max-w-[240px] text-[10px] leading-5 text-[#b4b4b4]">
                   Ask students to scan this rotating code with their phone
                   camera. Each student can check in once.
                 </p>
@@ -262,11 +266,11 @@ export default async function FacultyDashboard({
             </div>
           </section>
         )}
-        <section className="mt-9">
+        <section id="sections" className="mt-9 scroll-mt-6">
           <div className="mb-4 flex items-end justify-between">
             <div>
               <h2 className="text-lg font-bold">Assigned sections</h2>
-              <p className="mt-1 text-xs text-[#a1a1a1]">
+              <p className="mt-1 text-xs text-[#b4b4b4]">
                 Attendance sessions are limited to your current assignments.
               </p>
             </div>
@@ -279,14 +283,14 @@ export default async function FacultyDashboard({
                 <article key={section.id} className="surface p-5">
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex gap-3">
-                      <span className="grid size-10 place-items-center rounded-xl bg-[#171717] text-[10px] font-extrabold text-[#7cc9a0]">
+                      <span className="grid size-10 place-items-center rounded-xl bg-[#242424] text-[10px] font-extrabold text-[#3ecf8e]">
                         {course?.code.slice(0, 3) ?? "CLS"}
                       </span>
                       <div>
                         <h3 className="font-bold">
                           {course?.title ?? "Course"}
                         </h3>
-                        <p className="mt-1 text-[11px] text-[#a1a1a1]">
+                        <p className="mt-1 text-[11px] text-[#b4b4b4]">
                           {course?.code} · Section {section.section_code}
                         </p>
                       </div>
@@ -295,8 +299,8 @@ export default async function FacultyDashboard({
                       {studentsPerSection.get(section.id) ?? 0} students
                     </span>
                   </div>
-                  <div className="mt-5 flex items-center justify-between border-t border-[#262626] pt-4">
-                    <p className="text-[10px] text-[#a1a1a1]">
+                  <div className="mt-5 flex items-center justify-between border-t border-[#2e2e2e] pt-4">
+                    <p className="text-[10px] text-[#b4b4b4]">
                       {termMap.get(section.term_id) ?? "Academic term"}
                     </p>
                     {openSession ? (
@@ -330,7 +334,7 @@ export default async function FacultyDashboard({
             {!sections?.length && (
               <div className="surface col-span-full px-6 py-12 text-center">
                 <p className="font-bold">No sections assigned yet</p>
-                <p className="mt-2 text-xs text-[#a1a1a1]">
+                <p className="mt-2 text-xs text-[#b4b4b4]">
                   Ask an institution administrator to assign your faculty
                   account to a section.
                 </p>
@@ -338,7 +342,7 @@ export default async function FacultyDashboard({
             )}
           </div>
         </section>
-        <p className="mt-8 text-[10px] text-[#737373]">
+        <p className="mt-8 text-[10px] text-[#898989]">
           QR check-in confirms a student account and enrollment; it cannot
           prevent real-time code sharing.
         </p>

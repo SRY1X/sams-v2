@@ -2,7 +2,7 @@ export function Brand({ inverse = false }: { inverse?: boolean }) {
   return (
     <span className="inline-flex items-center gap-2.5">
       <span
-        className={`grid size-9 place-items-center rounded-lg ${inverse ? "bg-white/15 text-white" : "bg-[#262626] text-[#ff8833]"}`}
+        className={`grid size-9 place-items-center rounded-lg ${inverse ? "bg-white/15 text-white" : "bg-[#2e2e2e] text-[#3ecf8e]"}`}
         aria-hidden="true"
       >
         <svg
@@ -27,7 +27,7 @@ export function Brand({ inverse = false }: { inverse?: boolean }) {
           SAMS <span className="font-medium opacity-60">V2</span>
         </span>
         <span
-          className={`block text-[9px] font-bold uppercase tracking-[.15em] ${inverse ? "text-white/60" : "text-[#a1a1a1]"}`}
+          className={`block text-[9px] font-bold uppercase tracking-[.15em] ${inverse ? "text-white/60" : "text-[#b4b4b4]"}`}
         >
           Academic workspace
         </span>

@@ -93,7 +93,7 @@ export function AttendanceQr({ sessionId }: { sessionId: string }) {
   }, [sessionId]);
 
   return (
-    <div className="mx-auto w-fit rounded-[10px] bg-white p-3 shadow-sm ring-1 ring-[#262626]">
+    <div className="mx-auto w-fit rounded-[10px] bg-white p-3 shadow-sm ring-1 ring-[#2e2e2e]">
       {token && !error ? (
         <>
           <QRCodeSVG
@@ -108,7 +108,7 @@ export function AttendanceQr({ sessionId }: { sessionId: string }) {
           </p>
         </>
       ) : (
-        <div className="grid size-[220px] place-items-center rounded-xl bg-[#171717] text-center text-xs text-[#a1a1a1]">
+        <div className="grid size-[220px] place-items-center rounded-xl bg-[#242424] text-center text-xs text-[#b4b4b4]">
           {error
             ? "QR refresh unavailable. Try again shortly."
             : "Preparing secure QR…"}

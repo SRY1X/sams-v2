@@ -88,9 +88,13 @@ export default async function StudentHistoryPage({
   );
   return (
     <>
-      <AppHeader role="student" name={profile?.display_name ?? "Student"} />
+      <AppHeader
+        role="student"
+        name={profile?.display_name ?? "Student"}
+        active="history"
+      />
       <main className="shell py-10">
-        <Link href="/student" className="text-xs font-semibold text-[#ff8833]">
+        <Link href="/student" className="text-xs font-semibold text-[#3ecf8e]">
           ← Student overview
         </Link>
         <div className="mt-5">
@@ -98,16 +102,16 @@ export default async function StudentHistoryPage({
           <h1 className="mt-2 text-3xl font-bold tracking-tight">
             Attendance history
           </h1>
-          <p className="mt-2 text-sm text-[#a1a1a1]">
+          <p className="mt-2 text-sm text-[#b4b4b4]">
             A private record of the sessions you attended.
           </p>
         </div>
         <section className="surface mt-7 overflow-hidden">
           <form
             action="/student/history"
-            className="flex flex-col gap-3 border-b border-[#262626] p-4 sm:flex-row sm:items-end sm:justify-between sm:px-5"
+            className="flex flex-col gap-3 border-b border-[#2e2e2e] p-4 sm:flex-row sm:items-end sm:justify-between sm:px-5"
           >
-            <label className="grid gap-2 text-xs text-[#a1a1a1] sm:min-w-64">
+            <label className="grid gap-2 text-xs text-[#b4b4b4] sm:min-w-64">
               Filter by course
               <select
                 className="input"
@@ -130,7 +134,7 @@ export default async function StudentHistoryPage({
               </button>
               {selectedCourseId && (
                 <Link
-                  className="text-xs font-semibold text-[#a1a1a1] hover:text-white"
+                  className="text-xs font-semibold text-[#b4b4b4] hover:text-white"
                   href="/student/history"
                 >
                   Clear
@@ -161,7 +165,7 @@ export default async function StudentHistoryPage({
                     <tr key={record.session_id}>
                       <td>
                         <b>{course?.title ?? "Course"}</b>
-                        <span className="ml-2 text-[10px] text-[#a1a1a1]">
+                        <span className="ml-2 text-[10px] text-[#b4b4b4]">
                           {course?.code}
                         </span>
                       </td>
@@ -182,7 +186,7 @@ export default async function StudentHistoryPage({
                   <tr>
                     <td
                       colSpan={4}
-                      className="py-16 text-center text-sm text-[#a1a1a1]"
+                      className="py-16 text-center text-sm text-[#b4b4b4]"
                     >
                       {selectedCourseId
                         ? "No attendance records for this course yet."
@@ -194,7 +198,7 @@ export default async function StudentHistoryPage({
             </table>
           </div>
         </section>
-        <p className="mt-4 text-[10px] text-[#737373]">
+        <p className="mt-4 text-[10px] text-[#898989]">
           {selectedCourseId
             ? `Showing ${visibleRecords.length} matching records among the latest 200 attendance events.`
             : "Showing the most recent 200 attendance events."}

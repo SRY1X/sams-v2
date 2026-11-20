@@ -109,7 +109,7 @@ export function AttendanceClaim() {
           </Link>
         </div>
         <div
-          className={`mx-auto grid size-14 place-items-center rounded-2xl text-2xl ${statusKind === "success" ? "bg-[#142019] text-[#ff8833]" : statusKind === "error" ? "bg-[#261715] text-[#ff9588]" : "bg-[#171717] text-[#a1a1a1]"}`}
+          className={`mx-auto grid size-14 place-items-center rounded-2xl text-2xl ${statusKind === "success" ? "bg-[#102b1e] text-[#3ecf8e]" : statusKind === "error" ? "bg-[#261715] text-[#ff9588]" : "bg-[#242424] text-[#b4b4b4]"}`}
         >
           {statusKind === "success" ? "✓" : statusKind === "error" ? "!" : "⌗"}
         </div>
@@ -122,7 +122,7 @@ export function AttendanceClaim() {
                 ? "Couldn’t check in"
                 : "Recording attendance"}
         </h1>
-        <p className="mt-3 text-sm leading-6 text-[#a1a1a1]" role="status">
+        <p className="mt-3 text-sm leading-6 text-[#b4b4b4]" role="status">
           {token
             ? state
             : "No attendance code was found. Scan the QR code again."}
@@ -137,7 +137,7 @@ export function AttendanceClaim() {
             Open student dashboard
           </Link>
         )}
-        <p className="mt-8 border-t border-[#262626] pt-5 text-[10px] leading-5 text-[#737373]">
+        <p className="mt-8 border-t border-[#2e2e2e] pt-5 text-[10px] leading-5 text-[#898989]">
           QR codes expire quickly and can be used once per student for each
           session.
         </p>
