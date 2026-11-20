@@ -16,7 +16,8 @@ const requiredText = (min: number, max: number) =>
 
 function finishAdmin(message: string): never {
   revalidatePath("/admin");
-  redirect(`/admin?result=${encodeURIComponent(message)}`);
+  revalidatePath("/admin/setup");
+  redirect(`/admin/setup?result=${encodeURIComponent(message)}`);
 }
 
 export async function createDepartment(form: FormData) {
