@@ -127,11 +127,19 @@ export default async function StudentDashboard() {
               Your classes and attendance, all in one place.
             </p>
           </div>
-          <Link className="button" href="/student/history">
-            View attendance history <span aria-hidden="true">→</span>
-          </Link>
+          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+            <Link className="button w-full sm:w-auto" href="/student/scan">
+              Scan attendance QR <span aria-hidden="true">→</span>
+            </Link>
+            <Link
+              className="button secondary w-full sm:w-auto"
+              href="/student/history"
+            >
+              View history
+            </Link>
+          </div>
         </div>
-        <section className="mt-8 grid gap-4 sm:grid-cols-3">
+        <section className="mt-7 grid max-w-2xl gap-4 sm:grid-cols-2">
           <div className="surface p-5">
             <p className="eyebrow">Enrolled sections</p>
             <p className="mt-3 text-3xl font-bold">
@@ -142,30 +150,13 @@ export default async function StudentDashboard() {
             </p>
           </div>
           <div className="surface p-5">
-            <p className="eyebrow">Recent check-ins</p>
+            <p className="eyebrow">Recent records</p>
             <p className="mt-3 text-3xl font-bold">
               {presentCount.toString().padStart(2, "0")}
             </p>
             <p className="mt-1 text-xs text-[#a1a1a1]">
-              Most recent attendance records
+              Your latest attendance events
             </p>
-          </div>
-          <div className="surface flex flex-wrap items-center gap-3 bg-[#142019] p-5">
-            <span className="grid size-10 place-items-center rounded-xl bg-[#171717] text-lg text-[#ff8833]">
-              ⌗
-            </span>
-            <div>
-              <p className="text-sm font-bold">Ready to check in?</p>
-              <p className="mt-1 text-xs text-[#a1a1a1]">
-                Open the scanner and scan your instructor’s active QR code.
-              </p>
-            </div>
-            <Link
-              className="button secondary w-full sm:w-auto"
-              href="/student/scan"
-            >
-              Scan attendance QR <span aria-hidden="true">→</span>
-            </Link>
           </div>
         </section>
         <div className="mt-9 grid gap-6 lg:grid-cols-[1.35fr_.85fr]">
@@ -178,7 +169,8 @@ export default async function StudentDashboard() {
                 </p>
               </div>
               <span className="badge neutral">
-                {sectionCards.length} sections
+                {sectionCards.length}{" "}
+                {sectionCards.length === 1 ? "section" : "sections"}
               </span>
             </div>
             {sectionCards.length ? (

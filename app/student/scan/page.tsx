@@ -33,6 +33,17 @@ export default async function StudentScanPage() {
           Point your camera at the active QR code shown by your instructor. Keep
           this page open while the code is scanned.
         </p>
+        <div className="mt-5 rounded-xl border border-[#262626] bg-[#111111] p-4 text-xs leading-5 text-[#a1a1a1]">
+          <p className="font-semibold text-[#fafafa]">Before you scan</p>
+          <ul className="mt-2 list-disc space-y-1 pl-5">
+            <li>Open SAMS over HTTPS and allow camera access when prompted.</li>
+            <li>Keep the QR code on your instructor’s screen in view.</li>
+            <li>
+              Your camera video stays on this device; SAMS submits only the
+              scanned code.
+            </li>
+          </ul>
+        </div>
         <AttendanceScanner />
       </main>
     </>

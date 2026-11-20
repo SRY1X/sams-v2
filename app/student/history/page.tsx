@@ -1,29 +1,36 @@
 import Link from "next/link";
 import { AppHeader } from "@/components/app-header";
+import { filterAttendanceByCourse } from "@/lib/attendance/dashboard";
 import { formatInstitutionDateTime } from "@/lib/config/format";
 import { requireMembership } from "@/lib/auth/session";
 import { requireSupabaseData } from "@/lib/supabase/errors";
 
-export default async function StudentHistoryPage() {
+export default async function StudentHistoryPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
   const member = await requireMembership("student");
-  const [profileResult, institutionResult, recordsResult] = await Promise.all([
-    member.supabase
-      .from("profiles")
-      .select("display_name")
-      .eq("id", member.user_id)
-      .maybeSingle(),
-    member.supabase
-      .from("institutions")
-      .select("timezone")
-      .eq("id", member.institution_id)
-      .maybeSingle(),
-    member.supabase
-      .from("attendance_records")
-      .select("session_id,recorded_at,status")
-      .eq("student_user_id", member.user_id)
-      .order("recorded_at", { ascending: false })
-      .limit(200),
-  ]);
+  const [query, profileResult, institutionResult, recordsResult] =
+    await Promise.all([
+      searchParams,
+      member.supabase
+        .from("profiles")
+        .select("display_name")
+        .eq("id", member.user_id)
+        .maybeSingle(),
+      member.supabase
+        .from("institutions")
+        .select("timezone")
+        .eq("id", member.institution_id)
+        .maybeSingle(),
+      member.supabase
+        .from("attendance_records")
+        .select("session_id,recorded_at,status")
+        .eq("student_user_id", member.user_id)
+        .order("recorded_at", { ascending: false })
+        .limit(200),
+    ]);
   const profile = requireSupabaseData(profileResult, "student profile");
   const institution = requireSupabaseData(
     institutionResult,
@@ -68,6 +75,17 @@ export default async function StudentHistoryPage() {
   const sessionMap = new Map((sessions ?? []).map((row) => [row.id, row]));
   const sectionMap = new Map((sections ?? []).map((row) => [row.id, row]));
   const courseMap = new Map((courses ?? []).map((row) => [row.id, row]));
+  const requestedCourseId =
+    typeof query.course === "string" ? query.course : "";
+  const selectedCourseId = courseMap.has(requestedCourseId)
+    ? requestedCourseId
+    : "";
+  const visibleRecords = filterAttendanceByCourse(
+    records ?? [],
+    sessionMap,
+    sectionMap,
+    selectedCourseId,
+  );
   return (
     <>
       <AppHeader role="student" name={profile?.display_name ?? "Student"} />
@@ -85,8 +103,43 @@ export default async function StudentHistoryPage() {
           </p>
         </div>
         <section className="surface mt-7 overflow-hidden">
+          <form
+            action="/student/history"
+            className="flex flex-col gap-3 border-b border-[#262626] p-4 sm:flex-row sm:items-end sm:justify-between sm:px-5"
+          >
+            <label className="grid gap-2 text-xs text-[#a1a1a1] sm:min-w-64">
+              Filter by course
+              <select
+                className="input"
+                name="course"
+                defaultValue={selectedCourseId}
+              >
+                <option value="">All courses</option>
+                {[...(courses ?? [])]
+                  .sort((left, right) => left.code.localeCompare(right.code))
+                  .map((course) => (
+                    <option key={course.id} value={course.id}>
+                      {course.code} · {course.title}
+                    </option>
+                  ))}
+              </select>
+            </label>
+            <div className="flex items-center gap-3">
+              <button className="button" type="submit">
+                Apply filter
+              </button>
+              {selectedCourseId && (
+                <Link
+                  className="text-xs font-semibold text-[#a1a1a1] hover:text-white"
+                  href="/student/history"
+                >
+                  Clear
+                </Link>
+              )}
+            </div>
+          </form>
           <div className="table-wrap">
-            <table>
+            <table className="min-w-[600px]">
               <thead>
                 <tr>
                   <th>Course</th>
@@ -96,7 +149,7 @@ export default async function StudentHistoryPage() {
                 </tr>
               </thead>
               <tbody>
-                {records?.map((record) => {
+                {visibleRecords.map((record) => {
                   const session = sessionMap.get(record.session_id);
                   const section = session
                     ? sectionMap.get(session.section_id)
@@ -125,13 +178,15 @@ export default async function StudentHistoryPage() {
                     </tr>
                   );
                 })}
-                {!records?.length && (
+                {!visibleRecords.length && (
                   <tr>
                     <td
                       colSpan={4}
                       className="py-16 text-center text-sm text-[#a1a1a1]"
                     >
-                      No attendance records yet.
+                      {selectedCourseId
+                        ? "No attendance records for this course yet."
+                        : "No attendance records yet."}
                     </td>
                   </tr>
                 )}
@@ -140,7 +195,9 @@ export default async function StudentHistoryPage() {
           </div>
         </section>
         <p className="mt-4 text-[10px] text-[#737373]">
-          Showing the most recent 200 records.
+          {selectedCourseId
+            ? `Showing ${visibleRecords.length} matching records among the latest 200 attendance events.`
+            : "Showing the most recent 200 attendance events."}
         </p>
       </main>
     </>
