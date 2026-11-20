@@ -7,6 +7,7 @@ import {
   closeAttendanceSession,
   startAttendanceSession,
 } from "@/lib/attendance/actions";
+import { selectActiveSession } from "@/lib/attendance/dashboard";
 import { requireMembership } from "@/lib/auth/session";
 import { requireSupabaseData } from "@/lib/supabase/errors";
 
@@ -104,11 +105,7 @@ export default async function FacultyDashboard({
     (openSessions ?? []).map((row) => [row.section_id, row]),
   );
   const selectedId = typeof query.session === "string" ? query.session : "";
-  const activeSession = query.closed
-    ? null
-    : ((openSessions ?? []).find((row) => row.id === selectedId) ??
-      openSessions?.[0] ??
-      null);
+  const activeSession = selectActiveSession(openSessions ?? [], selectedId);
   const selectedSection = activeSession
     ? (sections ?? []).find((row) => row.id === activeSession.section_id)
     : undefined;
@@ -147,10 +144,44 @@ export default async function FacultyDashboard({
           </div>
         )}
         {query.closed && (
-          <div className="mt-6 rounded-lg border border-[#262626] bg-[#142019] p-3 text-xs text-[#7cc9a0]">
-            Attendance session closed.
+          <div
+            className="mt-6 rounded-lg border border-[#244332] bg-[#142019] p-3 text-sm text-[#7cc9a0]"
+            role="status"
+          >
+            Session closed. Any other active session is ready below.
           </div>
         )}
+        <section
+          className="mt-7 grid gap-3 sm:grid-cols-3"
+          aria-label="Teaching overview"
+        >
+          <div className="surface p-4 sm:p-5">
+            <p className="eyebrow">Assigned sections</p>
+            <p className="mt-3 text-2xl font-bold">{sections?.length ?? 0}</p>
+            <p className="mt-1 text-xs text-[#a1a1a1]">Available to manage</p>
+          </div>
+          <div className="surface p-4 sm:p-5">
+            <p className="eyebrow">Live sessions</p>
+            <p className="mt-3 text-2xl font-bold">
+              {openSessions?.length ?? 0}
+            </p>
+            <p className="mt-1 text-xs text-[#a1a1a1]">
+              Open attendance windows
+            </p>
+          </div>
+          <div className="surface p-4 sm:p-5">
+            <p className="eyebrow">Section enrollments</p>
+            <p className="mt-3 text-2xl font-bold">
+              {[...studentsPerSection.values()].reduce(
+                (total, count) => total + count,
+                0,
+              )}
+            </p>
+            <p className="mt-1 text-xs text-[#a1a1a1]">
+              Across assigned sections
+            </p>
+          </div>
+        </section>
         {activeSession && selectedSection && (
           <section className="surface mt-8 overflow-hidden">
             <div className="flex flex-wrap items-start justify-between gap-4 border-b border-[#262626] p-5 sm:p-6">
@@ -181,6 +212,41 @@ export default async function FacultyDashboard({
                 </button>
               </form>
             </div>
+            {(openSessions ?? []).length > 1 && (
+              <nav
+                className="flex flex-wrap items-center gap-2 border-b border-[#262626] px-5 py-3 sm:px-6"
+                aria-label="Switch active attendance session"
+              >
+                <span className="mr-1 text-[11px] text-[#a1a1a1]">
+                  Active sessions
+                </span>
+                {(openSessions ?? []).map((session) => {
+                  const section = (sections ?? []).find(
+                    (item) => item.id === session.section_id,
+                  );
+                  const course = section
+                    ? courseMap.get(section.course_id)
+                    : undefined;
+                  if (!section) return null;
+                  return (
+                    <Link
+                      key={session.id}
+                      className={`badge neutral transition-colors hover:border-[#7cc9a0] hover:text-[#7cc9a0] ${
+                        session.id === activeSession.id
+                          ? "!border-[#244332] !bg-[#142019] !text-[#7cc9a0]"
+                          : ""
+                      }`}
+                      href={`/faculty?session=${session.id}`}
+                      aria-current={
+                        session.id === activeSession.id ? "page" : undefined
+                      }
+                    >
+                      {course?.code ?? "Section"} · {section.section_code}
+                    </Link>
+                  );
+                })}
+              </nav>
+            )}
             <div className="grid gap-8 p-5 sm:p-6 lg:grid-cols-[280px_1fr]">
               <div className="text-center">
                 <AttendanceQr sessionId={activeSession.id} />
