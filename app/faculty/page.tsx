@@ -15,6 +15,7 @@ import {
 } from "@/lib/attendance/session-start";
 import { requireMembership } from "@/lib/auth/session";
 import { requireSupabaseData } from "@/lib/supabase/errors";
+import { isAttendanceDiagnosticsEnabled } from "@/lib/attendance/performance";
 
 export default async function FacultyDashboard({
   searchParams,
@@ -23,6 +24,7 @@ export default async function FacultyDashboard({
 }) {
   const member = await requireMembership("faculty");
   const query = await searchParams;
+  const diagnosticsEnabled = isAttendanceDiagnosticsEnabled(query.diagnostics);
   const [profileResult, institutionResult, assignmentsResult] =
     await Promise.all([
       member.supabase
@@ -238,7 +240,10 @@ export default async function FacultyDashboard({
             )}
             <div className="grid gap-8 p-5 sm:p-6 lg:grid-cols-[280px_1fr]">
               <div className="text-center">
-                <AttendanceQr sessionId={activeSession.id} />
+                <AttendanceQr
+                  sessionId={activeSession.id}
+                  diagnosticsEnabled={diagnosticsEnabled}
+                />
                 <p className="mx-auto mt-3 max-w-[240px] text-[10px] leading-5 text-[#b4b4b4]">
                   Ask students to scan this rotating code with their phone
                   camera. Each student can check in once.
@@ -247,6 +252,7 @@ export default async function FacultyDashboard({
               <LiveAttendanceList
                 sessionId={activeSession.id}
                 timezone={institution?.timezone ?? "UTC"}
+                diagnosticsEnabled={diagnosticsEnabled}
               />
             </div>
           </section>

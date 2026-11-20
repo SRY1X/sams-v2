@@ -3,9 +3,16 @@ import { AttendanceScanner } from "@/components/attendance-scanner";
 import { AppHeader } from "@/components/app-header";
 import { requireMembership } from "@/lib/auth/session";
 import { requireSupabaseData } from "@/lib/supabase/errors";
+import { isAttendanceDiagnosticsEnabled } from "@/lib/attendance/performance";
 
-export default async function StudentScanPage() {
+export default async function StudentScanPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
   const member = await requireMembership("student");
+  const query = await searchParams;
+  const diagnosticsEnabled = isAttendanceDiagnosticsEnabled(query.diagnostics);
   const profile = requireSupabaseData(
     await member.supabase
       .from("profiles")
@@ -48,7 +55,7 @@ export default async function StudentScanPage() {
             </li>
           </ul>
         </div>
-        <AttendanceScanner />
+        <AttendanceScanner diagnosticsEnabled={diagnosticsEnabled} />
       </main>
     </>
   );

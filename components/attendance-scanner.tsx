@@ -3,6 +3,12 @@
 import Link from "next/link";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import type { IScannerControls } from "@zxing/browser";
+import { AttendancePerformanceDiagnostics } from "@/components/attendance/performance-diagnostics";
+import type {
+  AttendanceDiagnosticMetricKey,
+  AttendanceDiagnosticOutcome,
+} from "@/components/attendance/performance-diagnostics";
+import { parseAttendanceServerTiming } from "@/lib/attendance/performance";
 
 type ScanState =
   "idle" | "starting" | "scanning" | "submitting" | "success" | "error";
@@ -54,11 +60,18 @@ function getTokenFromQr(value: string) {
   }
 }
 
-export function AttendanceScanner() {
+export function AttendanceScanner({
+  diagnosticsEnabled,
+}: {
+  diagnosticsEnabled: boolean;
+}) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const controlsRef = useRef<IScannerControls | null>(null);
   const scanHandledRef = useRef(false);
   const scanRunRef = useRef(0);
+  const cameraStartedAtRef = useRef<number | null>(null);
+  const cameraReadyAtRef = useRef<number | null>(null);
+  const cameraReadyCleanupRef = useRef<(() => void) | null>(null);
   const cameraAvailable = useSyncExternalStore(
     subscribeToCameraAvailability,
     getCameraAvailability,
@@ -67,10 +80,21 @@ export function AttendanceScanner() {
   const [state, setState] = useState<ScanState>("idle");
   const [message, setMessage] = useState("");
   const [needsSignIn, setNeedsSignIn] = useState(false);
+  const [diagnosticMetrics, setDiagnosticMetrics] = useState<
+    Partial<Record<AttendanceDiagnosticMetricKey, number | undefined>>
+  >({});
+  const [diagnosticOutcome, setDiagnosticOutcome] =
+    useState<AttendanceDiagnosticOutcome>();
+
+  function clearCameraReadyListener() {
+    cameraReadyCleanupRef.current?.();
+    cameraReadyCleanupRef.current = null;
+  }
 
   useEffect(() => {
     return () => {
       scanRunRef.current += 1;
+      clearCameraReadyListener();
       controlsRef.current?.stop();
     };
   }, []);
@@ -78,6 +102,7 @@ export function AttendanceScanner() {
   async function submitScannedQr(value: string) {
     const token = getTokenFromQr(value);
     if (!token) {
+      if (diagnosticsEnabled) setDiagnosticOutcome("claim_rejected");
       setState("error");
       setMessage("That isn’t a valid QR code for this SAMS workspace.");
       scanHandledRef.current = false;
@@ -86,6 +111,7 @@ export function AttendanceScanner() {
 
     setState("submitting");
     setMessage("Checking your attendance…");
+    const claimStartedAt = performance.now();
     try {
       const response = await fetch("/api/attendance/claim", {
         method: "POST",
@@ -97,8 +123,21 @@ export function AttendanceScanner() {
         status?: string;
         error?: string;
       };
+      if (diagnosticsEnabled) {
+        const timing = parseAttendanceServerTiming(
+          response.headers.get("Server-Timing"),
+        );
+        setDiagnosticMetrics((previous) => ({
+          ...previous,
+          claimRoundTripMs: performance.now() - claimStartedAt,
+          authMs: timing.authMs,
+          dbMs: timing.dbMs,
+          serverTotalMs: timing.serverTotalMs,
+        }));
+      }
 
       if (response.status === 401) {
+        if (diagnosticsEnabled) setDiagnosticOutcome("claim_auth");
         setState("error");
         setNeedsSignIn(true);
         setMessage(
@@ -107,12 +146,17 @@ export function AttendanceScanner() {
         return;
       }
       if (!response.ok) {
+        if (diagnosticsEnabled) setDiagnosticOutcome("claim_rejected");
         setState("error");
         setMessage(body.error ?? "This QR code is invalid or has expired.");
         scanHandledRef.current = false;
         return;
       }
 
+      if (diagnosticsEnabled)
+        setDiagnosticOutcome(
+          body.status === "already_recorded" ? "already_recorded" : "success",
+        );
       setState("success");
       setMessage(
         body.status === "already_recorded"
@@ -120,6 +164,16 @@ export function AttendanceScanner() {
           : "Attendance recorded. You’re all set!",
       );
     } catch {
+      if (diagnosticsEnabled) {
+        setDiagnosticMetrics((previous) => ({
+          ...previous,
+          claimRoundTripMs: performance.now() - claimStartedAt,
+          authMs: undefined,
+          dbMs: undefined,
+          serverTotalMs: undefined,
+        }));
+        setDiagnosticOutcome("claim_network");
+      }
       setState("error");
       setMessage(
         "We couldn’t reach SAMS. Check your connection and scan again.",
@@ -130,6 +184,7 @@ export function AttendanceScanner() {
 
   async function startCamera() {
     if (!window.isSecureContext || !navigator.mediaDevices?.getUserMedia) {
+      if (diagnosticsEnabled) setDiagnosticOutcome("camera_unavailable");
       setState("error");
       setMessage("In-browser camera scanning requires HTTPS on this device.");
       return;
@@ -138,15 +193,41 @@ export function AttendanceScanner() {
 
     const scanRun = ++scanRunRef.current;
     scanHandledRef.current = false;
+    const cameraStartedAt = performance.now();
+    cameraStartedAtRef.current = diagnosticsEnabled ? cameraStartedAt : null;
+    cameraReadyAtRef.current = null;
+    clearCameraReadyListener();
+    if (diagnosticsEnabled) {
+      setDiagnosticMetrics({});
+      setDiagnosticOutcome(undefined);
+    }
     setNeedsSignIn(false);
     setState("starting");
     setMessage("Requesting camera access…");
     try {
       const { BrowserQRCodeReader } = await import("@zxing/browser");
       const reader = new BrowserQRCodeReader();
+      const video = videoRef.current;
+      if (!video || scanRunRef.current !== scanRun) return;
+      const handleCameraReady = () => {
+        if (scanRunRef.current !== scanRun) return;
+        const cameraReadyAt = performance.now();
+        cameraReadyAtRef.current = cameraReadyAt;
+        const cameraStartedAt = cameraStartedAtRef.current;
+        if (diagnosticsEnabled && cameraStartedAt !== null) {
+          setDiagnosticMetrics((previous) => ({
+            ...previous,
+            cameraStartupMs: cameraReadyAt - cameraStartedAt,
+          }));
+        }
+        clearCameraReadyListener();
+      };
+      video.addEventListener("playing", handleCameraReady, { once: true });
+      cameraReadyCleanupRef.current = () =>
+        video.removeEventListener("playing", handleCameraReady);
       const controls = await reader.decodeFromVideoDevice(
         undefined,
-        videoRef.current,
+        video,
         (result, _error, scanControls) => {
           if (
             !result ||
@@ -154,7 +235,15 @@ export function AttendanceScanner() {
             scanRunRef.current !== scanRun
           )
             return;
+          const cameraReadyAt = cameraReadyAtRef.current;
+          if (diagnosticsEnabled && cameraReadyAt !== null) {
+            setDiagnosticMetrics((previous) => ({
+              ...previous,
+              qrDecodeMs: performance.now() - cameraReadyAt,
+            }));
+          }
           scanHandledRef.current = true;
+          clearCameraReadyListener();
           scanControls.stop();
           controlsRef.current = null;
           void submitScannedQr(result.getText());
@@ -172,8 +261,18 @@ export function AttendanceScanner() {
       }
     } catch (error) {
       if (scanRunRef.current !== scanRun) return;
+      clearCameraReadyListener();
       controlsRef.current?.stop();
       controlsRef.current = null;
+      if (diagnosticsEnabled) {
+        setDiagnosticOutcome(
+          error instanceof DOMException &&
+            (error.name === "NotAllowedError" ||
+              error.name === "PermissionDeniedError")
+            ? "camera_permission"
+            : "camera_unavailable",
+        );
+      }
       setState("error");
       setMessage(getCameraErrorMessage(error));
     }
@@ -181,6 +280,7 @@ export function AttendanceScanner() {
 
   function stopCamera() {
     scanRunRef.current += 1;
+    clearCameraReadyListener();
     controlsRef.current?.stop();
     controlsRef.current = null;
     if (state === "scanning" || state === "starting") {
@@ -285,6 +385,11 @@ export function AttendanceScanner() {
           )}
         </p>
       )}
+      <AttendancePerformanceDiagnostics
+        enabled={diagnosticsEnabled}
+        metrics={diagnosticMetrics}
+        outcome={diagnosticOutcome}
+      />
     </section>
   );
 }
