@@ -1,41 +1,21 @@
-# Local demonstration data
+# Preparing a synthetic demonstration
 
-SAMS V2 includes a synthetic local dataset so students, faculty, administrators, and contributors can explore the application without access to a real institution's data.
+SAMS does not publish shared login credentials or automatically create hosted demo users. Create an isolated Supabase project for the demonstration and provision its users manually. The public repository contains no real institutional roster or attendance data.
 
-## What is included
+## Create the accounts
 
-The local seed creates an institution called **Open-Source University** in the `Asia/Kolkata` time zone, a computing department, the 2026–27 academic year, a course, and section A. The demo-user script creates one administrator, one faculty member, and one student; assigns the faculty member to the section; enrolls the student; and adds one closed sample session with one historical present record.
+1. Complete [hosted setup](setup.md) through the migration step.
+2. In **Supabase → Authentication → Users**, create three distinct accounts and confirm them: one administrator, one faculty member, and one student. Use test email addresses or aliases you control. Choose unique passwords and do not publish them.
+3. Copy each account's Auth UUID and run the membership SQL in the setup guide, replacing the example UUIDs.
+4. Optionally update `profiles.display_name` for clearer demonstration screens. The Auth user creation trigger creates each profile automatically.
+5. Deploy to a Vercel Preview or isolated Vercel project using the same Supabase sandbox and synthetic data.
 
-All names and email addresses are synthetic. The `.example.test` domain is reserved for testing and cannot receive normal public email.
+## Prepare the workflow
 
-## Create or refresh local demo accounts
+Sign in as admin and create a department, academic term, course, and section. Assign the faculty user's UUID to that section and enroll the student user's UUID. Then sign in on separate browser sessions as faculty and student: faculty starts a session; student scans the live QR on an HTTPS phone page; faculty checks the attendance list and student checks their own history.
 
-1. Start the local Supabase stack with `npm exec -- supabase start`.
-2. Copy `.env.example` to `.env.demo.local` and set `NEXT_PUBLIC_SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` using the **local** values shown by `npm exec -- supabase status`.
-3. Set the same local URL and publishable key in `.env.local` for the web application.
-4. Run:
+Do not seed this public repository with institution-specific records. For a presentation, use invented names and course data. Do not use real student photos, identifiers, emails, attendance exports, or shared passwords in screenshots or documentation.
 
-   ```sh
-   npm run demo:seed
-   ```
+## Refresh or remove a demonstration
 
-The script refuses any URL other than HTTP loopback (`localhost`, `127.0.0.1`, or `::1`). It uses the local service-role key only for this synthetic fixture. It is idempotent and resets the three demo passwords to the documented local password each time it runs.
-
-| Role    | Local email                    | Local-only password      |
-| ------- | ------------------------------ | ------------------------ |
-| Admin   | `admin@sams-v2.example.test`   | `SamsDemo!LocalOnly2026` |
-| Faculty | `faculty@sams-v2.example.test` | `SamsDemo!LocalOnly2026` |
-| Student | `student@sams-v2.example.test` | `SamsDemo!LocalOnly2026` |
-
-These credentials are intentionally public and synthetic. **Never seed these accounts into a hosted or production project.** The script's loopback guard is an additional safety check, not a reason to reuse its password or service key in a hosted environment. `.env.demo.local` is ignored by Git.
-
-## Reset local data
-
-To reset the local database (this deletes all data in the local Supabase stack), verify you are not linked to a hosted project and run:
-
-```sh
-npm exec -- supabase db reset --local
-npm run demo:seed
-```
-
-Do not add real student/faculty names, emails, photographs, IDs, grades, attendance exports, or screenshots to seed files, tests, or public documentation. If an institution needs to demonstrate its configuration, replace the synthetic catalog in its own private environment and keep those records out of this public repository.
+Manage synthetic Auth users in the Supabase Authentication dashboard. Remove test accounts and their memberships when the demo is no longer needed. Use a dedicated disposable Supabase project so cleanup cannot affect production data. Never use a database reset, bulk delete, or project credential from a production institution to refresh a demo.

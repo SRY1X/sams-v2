@@ -137,6 +137,26 @@ export type Database = {
         Args: { p_session_id: string };
         Returns: boolean;
       };
+      get_attendance_qr_context: {
+        Args: { p_session_id: string };
+        Returns: {
+          expires_at: string;
+          qr_rotation_seconds: number;
+          qr_token_ttl_seconds: number;
+        }[];
+      };
+      get_attendance_session_snapshot: {
+        Args: { p_session_id: string };
+        Returns: { timezone: string; records: Json }[];
+      };
+      create_invited_membership: {
+        Args: {
+          p_institution_id: string;
+          p_user_id: string;
+          p_role: string;
+        };
+        Returns: string;
+      };
     };
     Enums: Record<string, never>;
     CompositeTypes: Record<string, never>;

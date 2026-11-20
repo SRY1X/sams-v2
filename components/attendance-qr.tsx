@@ -2,9 +2,13 @@
 
 import { useEffect, useRef, useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
+import { DEFAULT_QR_ROTATION_SECONDS } from "@/lib/attendance/constants";
 
 type TokenResult = { url: string; expiresAt: number; rotateAfterMs?: number };
+const EXPIRED_QR_RETRY_MS = 2_500;
+const QR_EXPIRY_REFRESH_BUFFER_MS = 500;
 
+/** Displays a session QR code and countdown, refreshing tokens while the page is visible. */
 export function AttendanceQr({ sessionId }: { sessionId: string }) {
   const [token, setToken] = useState<TokenResult | null>(null);
   const [error, setError] = useState(false);
@@ -14,7 +18,11 @@ export function AttendanceQr({ sessionId }: { sessionId: string }) {
   useEffect(() => {
     let alive = true;
     let refreshTimer = 0;
+    let refreshing = false;
+    /** Fetches one token at a time and schedules rotation before expiry or a retry after failure. */
     async function refresh() {
+      if (!alive || refreshing || document.visibilityState === "hidden") return;
+      refreshing = true;
       try {
         const response = await fetch(
           `/api/attendance/sessions/${sessionId}/token`,
@@ -22,20 +30,47 @@ export function AttendanceQr({ sessionId }: { sessionId: string }) {
         );
         if (!response.ok) throw new Error("unavailable");
         const body = (await response.json()) as TokenResult;
+        const remainingMs = body.expiresAt - Date.now();
+        if (remainingMs <= QR_EXPIRY_REFRESH_BUFFER_MS) {
+          if (alive) {
+            setError(true);
+            refreshTimer = window.setTimeout(
+              () => void refresh(),
+              EXPIRED_QR_RETRY_MS,
+            );
+          }
+          return;
+        }
         if (alive) {
           setToken(body);
           expiresRef.current = body.expiresAt;
           setError(false);
-          refreshTimer = window.setTimeout(
-            () => void refresh(),
-            body.rotateAfterMs ?? 25_000,
+          const refreshInMs = Math.max(
+            100,
+            Math.min(
+              body.rotateAfterMs ?? DEFAULT_QR_ROTATION_SECONDS * 1000,
+              remainingMs - QR_EXPIRY_REFRESH_BUFFER_MS,
+            ),
           );
+          refreshTimer = window.setTimeout(() => void refresh(), refreshInMs);
         }
       } catch {
         if (alive) {
           setError(true);
-          refreshTimer = window.setTimeout(() => void refresh(), 25_000);
+          refreshTimer = window.setTimeout(
+            () => void refresh(),
+            EXPIRED_QR_RETRY_MS,
+          );
         }
+      } finally {
+        refreshing = false;
+      }
+    }
+    /** Replaces the pending refresh timer with an immediate fetch when the page becomes visible. */
+    function refreshWhenVisible() {
+      if (document.visibilityState === "visible") {
+        window.clearTimeout(refreshTimer);
+        void refresh();
       }
     }
     void refresh();
@@ -48,10 +83,12 @@ export function AttendanceQr({ sessionId }: { sessionId: string }) {
         ),
       1000,
     );
+    document.addEventListener("visibilitychange", refreshWhenVisible);
     return () => {
       alive = false;
       window.clearTimeout(refreshTimer);
       window.clearInterval(ticker);
+      document.removeEventListener("visibilitychange", refreshWhenVisible);
     };
   }, [sessionId]);
 

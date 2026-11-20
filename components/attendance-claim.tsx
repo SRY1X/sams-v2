@@ -4,30 +4,53 @@ import Link from "next/link";
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { Brand } from "@/components/brand";
 
-function subscribeToHash(callback: () => void) {
-  window.addEventListener("hashchange", callback);
-  return () => window.removeEventListener("hashchange", callback);
-}
-function readTokenFromHash() {
+function readHashToken() {
   return new URLSearchParams(window.location.hash.slice(1)).get("token") ?? "";
 }
-function getServerToken() {
-  return "";
+
+function createTokenStore() {
+  let token: string | undefined;
+
+  return {
+    subscribe(callback: () => void) {
+      const handleHashChange = () => {
+        token = readHashToken();
+        callback();
+      };
+      window.addEventListener("hashchange", handleHashChange);
+      return () => window.removeEventListener("hashchange", handleHashChange);
+    },
+    getSnapshot() {
+      token ??= readHashToken();
+      return token;
+    },
+    getServerSnapshot() {
+      return "";
+    },
+  };
 }
 
 export function AttendanceClaim() {
+  const [tokenStore] = useState(createTokenStore);
   const token = useSyncExternalStore(
-    subscribeToHash,
-    readTokenFromHash,
-    getServerToken,
+    tokenStore.subscribe,
+    tokenStore.getSnapshot,
+    tokenStore.getServerSnapshot,
   );
   const [state, setState] = useState("Checking your attendance session…");
   const [kind, setKind] = useState<"busy" | "success" | "error" | "signin">(
     "busy",
   );
+
   useEffect(() => {
-    window.history.replaceState(null, "", "/attendance/claim");
-  }, []);
+    if (!token) return;
+    window.history.replaceState(
+      null,
+      "",
+      `${window.location.pathname}${window.location.search}`,
+    );
+  }, [token]);
+
   useEffect(() => {
     if (!token) return;
     window.history.replaceState(null, "", "/attendance/claim");
@@ -74,6 +97,9 @@ export function AttendanceClaim() {
       active = false;
     };
   }, [token]);
+
+  const statusKind = token ? kind : "error";
+
   return (
     <main className="grid min-h-screen place-items-center px-5">
       <div className="surface w-full max-w-md p-8 text-center">
@@ -83,20 +109,16 @@ export function AttendanceClaim() {
           </Link>
         </div>
         <div
-          className={`mx-auto grid size-14 place-items-center rounded-2xl text-2xl ${(token ? kind : "error") === "success" ? "bg-[#142019] text-[#ff8833]" : (token ? kind : "error") === "error" ? "bg-[#261715] text-[#ff9588]" : "bg-[#171717] text-[#a1a1a1]"}`}
+          className={`mx-auto grid size-14 place-items-center rounded-2xl text-2xl ${statusKind === "success" ? "bg-[#142019] text-[#ff8833]" : statusKind === "error" ? "bg-[#261715] text-[#ff9588]" : "bg-[#171717] text-[#a1a1a1]"}`}
         >
-          {(token ? kind : "error") === "success"
-            ? "✓"
-            : (token ? kind : "error") === "error"
-              ? "!"
-              : "⌗"}
+          {statusKind === "success" ? "✓" : statusKind === "error" ? "!" : "⌗"}
         </div>
         <h1 className="mt-5 text-2xl font-bold tracking-tight">
-          {(token ? kind : "error") === "success"
+          {statusKind === "success"
             ? "You’re checked in"
-            : (token ? kind : "error") === "signin"
+            : statusKind === "signin"
               ? "Student sign-in needed"
-              : (token ? kind : "error") === "error"
+              : statusKind === "error"
                 ? "Couldn’t check in"
                 : "Recording attendance"}
         </h1>
@@ -105,12 +127,12 @@ export function AttendanceClaim() {
             ? state
             : "No attendance code was found. Scan the QR code again."}
         </p>
-        {(token ? kind : "error") === "signin" && (
+        {statusKind === "signin" && (
           <Link className="button mt-6" href="/login">
             Go to sign in <span aria-hidden="true">→</span>
           </Link>
         )}
-        {(token ? kind : "error") === "error" && (
+        {statusKind === "error" && (
           <Link className="button secondary mt-6" href="/student">
             Open student dashboard
           </Link>

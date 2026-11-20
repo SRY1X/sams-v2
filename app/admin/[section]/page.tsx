@@ -1,6 +1,8 @@
 import { AppHeader } from "@/components/app-header";
 import { AdminNavigation } from "@/components/admin-navigation";
+import { formatInstitutionDateTime } from "@/lib/config/format";
 import { requireMembership } from "@/lib/auth/session";
+import { requireSupabaseData } from "@/lib/supabase/errors";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 
@@ -32,27 +34,33 @@ export default async function AdminRecordsPage({
 }) {
   const member = await requireMembership("admin");
   const [{ section }, query] = await Promise.all([params, searchParams]);
-  if (!(section in titles)) notFound();
+  if (!Object.hasOwn(titles, section)) notFound();
   const q = typeof query.q === "string" ? query.q.trim().toLowerCase() : "";
   const statusFilter = typeof query.status === "string" ? query.status : "";
   const groupFilter = typeof query.group === "string" ? query.group : "";
   const [
-    { data: profile },
-    { data: departments },
-    { data: terms },
-    { data: courses },
-    { data: sections },
-    { data: memberships },
-    { data: enrollments },
-    { data: sessions },
-    { data: assignments },
-    { data: attendance },
-    { data: audit },
+    profileResult,
+    institutionResult,
+    departmentsResult,
+    termsResult,
+    coursesResult,
+    sectionsResult,
+    membershipsResult,
+    enrollmentsResult,
+    sessionsResult,
+    assignmentsResult,
+    attendanceResult,
+    auditResult,
   ] = await Promise.all([
     member.supabase
       .from("profiles")
       .select("display_name")
       .eq("id", member.user_id)
+      .maybeSingle(),
+    member.supabase
+      .from("institutions")
+      .select("name,timezone")
+      .eq("id", member.institution_id)
       .maybeSingle(),
     member.supabase
       .from("departments")
@@ -113,13 +121,43 @@ export default async function AdminRecordsPage({
       .order("created_at", { ascending: false })
       .limit(500),
   ]);
+  const profile = requireSupabaseData(profileResult, "administrator profile");
+  const institution = requireSupabaseData(
+    institutionResult,
+    "institution details",
+  );
+  const departments = requireSupabaseData(departmentsResult, "department list");
+  const terms = requireSupabaseData(termsResult, "academic term list");
+  const courses = requireSupabaseData(coursesResult, "course list");
+  const sections = requireSupabaseData(sectionsResult, "course section list");
+  const memberships = requireSupabaseData(
+    membershipsResult,
+    "institution member list",
+  );
+  const enrollments = requireSupabaseData(enrollmentsResult, "enrollment list");
+  const sessions = requireSupabaseData(
+    sessionsResult,
+    "attendance session list",
+  );
+  const assignments = requireSupabaseData(
+    assignmentsResult,
+    "faculty assignment list",
+  );
+  const attendance = requireSupabaseData(
+    attendanceResult,
+    "attendance record list",
+  );
+  const audit = requireSupabaseData(auditResult, "audit activity list");
   const ids = [...new Set((memberships ?? []).map((x) => x.user_id))];
-  const { data: profiles } = ids.length
-    ? await member.supabase
-        .from("profiles")
-        .select("id,display_name")
-        .in("id", ids)
-    : { data: [] };
+  const profiles = ids.length
+    ? requireSupabaseData(
+        await member.supabase
+          .from("profiles")
+          .select("id,display_name")
+          .in("id", ids),
+        "member profile list",
+      )
+    : [];
   const names = new Map(
     (profiles ?? []).map((x) => [x.id, x.display_name || "Member"]),
   );
@@ -142,7 +180,7 @@ export default async function AdminRecordsPage({
       .map((x) => ({
         id: x.id,
         title: names.get(x.user_id) ?? "Member",
-        detail: `Member since ${new Date(x.created_at).toLocaleDateString()}${section === "faculty" ? ` · ${(assignments ?? []).filter((a) => a.faculty_user_id === x.user_id).length} assigned section(s)` : ""}`,
+        detail: `Member since ${formatInstitutionDateTime(x.created_at, institution?.timezone ?? "UTC")}${section === "faculty" ? ` · ${(assignments ?? []).filter((a) => a.faculty_user_id === x.user_id).length} assigned section(s)` : ""}`,
         group: x.role,
         status: x.status,
       }));
@@ -179,7 +217,7 @@ export default async function AdminRecordsPage({
       group:
         departmentById.get(courseById.get(x.course_id)?.department_id ?? "")
           ?.name ?? "No branch",
-      status: "Open",
+      status: "Listed",
     }));
   if (section === "enrollments")
     rows = (enrollments ?? []).map((x) => {
@@ -198,7 +236,7 @@ export default async function AdminRecordsPage({
       return {
         id: x.id,
         title: `${courseById.get(s?.course_id ?? "")?.code ?? "Course"} · ${s?.section_code ?? "Section"}`,
-        detail: `${sessionCounts.get(x.id) ?? 0} check-ins · ${new Date(x.starts_at).toLocaleString()}`,
+        detail: `${sessionCounts.get(x.id) ?? 0} check-ins · ${formatInstitutionDateTime(x.starts_at, institution?.timezone ?? "UTC")}`,
         group: termById.get(s?.term_id ?? "")?.name ?? "Attendance session",
         status: x.status,
       };
@@ -207,7 +245,7 @@ export default async function AdminRecordsPage({
     rows = (audit ?? []).map((x) => ({
       id: x.id,
       title: x.action.replaceAll(".", " · "),
-      detail: `${x.entity_type} · ${new Date(x.created_at).toLocaleString()}`,
+      detail: `${x.entity_type} · ${formatInstitutionDateTime(x.created_at, institution?.timezone ?? "UTC")}`,
       group: "Audit event",
       status: "Recorded",
     }));
@@ -233,7 +271,7 @@ export default async function AdminRecordsPage({
             <span className="admin-mark">S</span>
             <div>
               <strong>Administration</strong>
-              <small>Institution workspace</small>
+              <small>{institution?.name ?? "Institution workspace"}</small>
             </div>
           </div>
           <AdminNavigation active={section} />
@@ -270,28 +308,32 @@ export default async function AdminRecordsPage({
                 />
                 <span aria-hidden="true">⌕</span>
               </label>
-              <label className="admin-filter-label">
-                <span>Status</span>
-                <select name="status" defaultValue={statusFilter}>
-                  <option value="">All statuses</option>
-                  {statuses.map((s) => (
-                    <option key={s} value={s.toLowerCase()}>
-                      {s}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label className="admin-filter-label">
-                <span>Group</span>
-                <select name="group" defaultValue={groupFilter}>
-                  <option value="">All groups</option>
-                  {groups.map((g) => (
-                    <option key={g} value={g}>
-                      {g}
-                    </option>
-                  ))}
-                </select>
-              </label>
+              {statuses.length > 1 || statusFilter ? (
+                <label className="admin-filter-label">
+                  <span>Status</span>
+                  <select name="status" defaultValue={statusFilter}>
+                    <option value="">All statuses</option>
+                    {statuses.map((s) => (
+                      <option key={s} value={s.toLowerCase()}>
+                        {s}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              ) : null}
+              {groups.length > 1 || groupFilter ? (
+                <label className="admin-filter-label">
+                  <span>Group</span>
+                  <select name="group" defaultValue={groupFilter}>
+                    <option value="">All groups</option>
+                    {groups.map((g) => (
+                      <option key={g} value={g}>
+                        {g}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              ) : null}
               <button className="admin-ghost" type="submit">
                 Apply filters
               </button>

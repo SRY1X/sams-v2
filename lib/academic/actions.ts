@@ -6,7 +6,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { requireMembership } from "@/lib/auth/session";
 import type { Database, Role } from "@/lib/database.types";
-import { getPublicEnv } from "@/lib/config/env";
+import { getServerEnv, getSiteOrigin } from "@/lib/config/server-env";
 
 const text = (form: FormData, key: string) =>
   String(form.get(key) ?? "").trim();
@@ -145,6 +145,11 @@ export async function setMembershipStatus(form: FormData) {
   finishAdmin(error ? "save-failed" : "saved");
 }
 
+/**
+ * Requires an institution admin, invites a student or faculty member, and
+ * creates the membership plus audit event in one database transaction.
+ * Deletes the invited Auth user if the transactional database operation fails.
+ */
 export async function inviteMember(form: FormData) {
   const member = await requireMembership("admin");
   const parsed = z
@@ -160,39 +165,60 @@ export async function inviteMember(form: FormData) {
     });
   if (!parsed.success) finishAdmin("invalid");
   const secret = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  const { supabaseUrl } = getPublicEnv();
-  if (!secret || !supabaseUrl) finishAdmin("invite-unavailable");
+  if (!secret) finishAdmin("invite-unavailable");
+  let serverEnv: ReturnType<typeof getServerEnv>;
+  let siteOrigin: string;
+  try {
+    serverEnv = getServerEnv();
+    siteOrigin = getSiteOrigin();
+  } catch {
+    finishAdmin("invite-unavailable");
+  }
 
   // This elevated client is isolated to the admin-checked invitation operation.
-  const adminClient = createSupabaseClient<Database>(supabaseUrl, secret, {
-    auth: { autoRefreshToken: false, persistSession: false },
-  });
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+  const adminClient = createSupabaseClient<Database>(
+    serverEnv.NEXT_PUBLIC_SUPABASE_URL,
+    secret,
+    {
+      auth: { autoRefreshToken: false, persistSession: false },
+    },
+  );
   const { data: invite, error: inviteError } =
     await adminClient.auth.admin.inviteUserByEmail(parsed.data.email, {
       data: { full_name: parsed.data.display_name },
-      redirectTo: `${siteUrl}/auth/callback`,
+      redirectTo: `${siteOrigin}/auth/callback`,
     });
   if (inviteError || !invite.user) finishAdmin("invite-failed");
   const role = parsed.data.role as Extract<Role, "student" | "faculty">;
-  const { error: membershipError } = await adminClient
-    .from("institution_memberships")
-    .insert({
-      institution_id: member.institution_id,
-      user_id: invite.user.id,
-      role,
-      status: "active",
+  const { data: membershipId, error: membershipError } =
+    await member.supabase.rpc("create_invited_membership", {
+      p_institution_id: member.institution_id,
+      p_user_id: invite.user.id,
+      p_role: role,
     });
-  if (membershipError) {
-    await adminClient.auth.admin.deleteUser(invite.user.id);
+  if (membershipError || !membershipId) {
+    try {
+      const { error: cleanupError } = await adminClient.auth.admin.deleteUser(
+        invite.user.id,
+      );
+      if (cleanupError) {
+        // Cleanup is best effort because Auth and PostgreSQL are separate
+        // services and cannot share the transaction boundary.
+        console.error(
+          "Invite cleanup failed; an orphaned Auth user may remain.",
+          {
+            userId: invite.user.id,
+            message: cleanupError.message,
+          },
+        );
+      }
+    } catch {
+      // Keep the user-facing result generic if Auth cleanup also fails.
+      console.error("Invite cleanup threw; an orphaned Auth user may remain.", {
+        userId: invite.user.id,
+      });
+    }
     finishAdmin("invite-failed");
   }
-  await adminClient.from("audit_events").insert({
-    institution_id: member.institution_id,
-    actor_id: member.user_id,
-    action: "membership.invited",
-    entity_type: "institution_membership",
-    details: { role },
-  });
   finishAdmin("invited");
 }

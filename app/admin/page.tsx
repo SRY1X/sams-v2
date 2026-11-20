@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { AppHeader } from "@/components/app-header";
 import { AdminNavigation } from "@/components/admin-navigation";
+import { formatInstitutionDateTime } from "@/lib/config/format";
 import { requireMembership } from "@/lib/auth/session";
+import { requireSupabaseData } from "@/lib/supabase/errors";
 
 const card = "admin-card";
 
@@ -67,7 +69,8 @@ export default async function AdminOverview() {
       .from("attendance_sessions")
       .select("id", { count: "exact", head: true })
       .eq("institution_id", member.institution_id)
-      .eq("status", "open"),
+      .eq("status", "open")
+      .gt("expires_at", new Date().toISOString()),
     member.supabase
       .from("audit_events")
       .select("id,action,entity_type,created_at")
@@ -75,6 +78,20 @@ export default async function AdminOverview() {
       .order("created_at", { ascending: false })
       .limit(6),
   ]);
+  const profile = requireSupabaseData(profileResult, "administrator profile");
+  const institution = requireSupabaseData(
+    institutionResult,
+    "institution details",
+  );
+  const audit = requireSupabaseData(auditResult, "recent activity") ?? [];
+  requireSupabaseData(studentCount, "student count");
+  requireSupabaseData(facultyCount, "faculty count");
+  requireSupabaseData(branchCount, "branch count");
+  requireSupabaseData(courseCount, "course count");
+  requireSupabaseData(sectionCount, "section count");
+  requireSupabaseData(termCount, "academic term count");
+  requireSupabaseData(enrollmentCount, "enrollment count");
+  requireSupabaseData(sessionCount, "active session count");
   const metrics = [
     {
       label: "Students",
@@ -128,33 +145,28 @@ export default async function AdminOverview() {
 
   return (
     <div className="admin-workspace">
-      <AppHeader
-        role="admin"
-        name={profileResult.data?.display_name ?? "Administrator"}
-      />
+      <AppHeader role="admin" name={profile?.display_name ?? "Administrator"} />
       <div className="admin-layout">
         <aside className="admin-sidebar">
           <div className="admin-sidebar-title">
             <span className="admin-mark">S</span>
             <div>
               <strong>Administration</strong>
-              <small>
-                {institutionResult.data?.name ?? "Institution workspace"}
-              </small>
+              <small>{institution?.name ?? "Institution workspace"}</small>
             </div>
           </div>
           <AdminNavigation active="overview" />
           <div className="admin-sidebar-foot">
             Workspace timezone
             <br />
-            <b>{institutionResult.data?.timezone ?? "UTC"}</b>
+            <b>{institution?.timezone ?? "UTC"}</b>
           </div>
         </aside>
         <main className="admin-main">
           <header className="admin-page-heading">
             <div>
               <p className="admin-eyebrow">Institution overview</p>
-              <h1>{institutionResult.data?.name ?? "Administration"}</h1>
+              <h1>{institution?.name ?? "Administration"}</h1>
               <p>
                 Review your academic structure and jump into the records that
                 need attention.
@@ -240,19 +252,22 @@ export default async function AdminOverview() {
                 </Link>
               </div>
               <div className="admin-activity-list">
-                {(auditResult.data ?? []).map((event) => (
+                {audit.map((event) => (
                   <div className="admin-activity" key={event.id}>
                     <span className="admin-activity-dot" />
                     <div>
                       <strong>{event.action.replaceAll(".", " · ")}</strong>
                       <small>
                         {event.entity_type} ·{" "}
-                        {new Date(event.created_at).toLocaleString()}
+                        {formatInstitutionDateTime(
+                          event.created_at,
+                          institution?.timezone ?? "UTC",
+                        )}
                       </small>
                     </div>
                   </div>
                 ))}
-                {!auditResult.data?.length && (
+                {!audit.length && (
                   <p className="admin-empty">No activity recorded yet.</p>
                 )}
               </div>

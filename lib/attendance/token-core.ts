@@ -1,14 +1,22 @@
 import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
+import {
+  ATTENDANCE_TOKEN_CLOCK_SKEW_SECONDS,
+  DEFAULT_QR_TOKEN_TTL_SECONDS,
+} from "./constants";
 
 type Claims = { v: 1; sid: string; iat: number; exp: number; nonce: string };
 function signature(value: string, secret: string) {
   return createHmac("sha256", secret).update(value).digest("base64url");
 }
 
+/**
+ * Signs session claims with a random nonce and a lifetime clamped to 10–180 seconds.
+ * `now` is milliseconds since the Unix epoch; the returned token contains timestamps in seconds.
+ */
 export function issueAttendanceToken(
   sessionId: string,
   secret: string,
-  ttlSeconds = 40,
+  ttlSeconds = DEFAULT_QR_TOKEN_TTL_SECONDS,
   now = Date.now(),
 ) {
   const issuedAt = Math.floor(now / 1000);
@@ -23,11 +31,15 @@ export function issueAttendanceToken(
   return `${body}.${signature(body, secret)}`;
 }
 
+/**
+ * Returns claims after validating the signature, structure, and lifetime, or null for an invalid token.
+ * `now` is milliseconds since the Unix epoch; `skewSeconds` allows clock drift at both time boundaries.
+ */
 export function verifyAttendanceToken(
   token: string,
   secret: string,
   now = Date.now(),
-  skewSeconds = 5,
+  skewSeconds = ATTENDANCE_TOKEN_CLOCK_SKEW_SECONDS,
 ) {
   if (token.length > 1500 || token.length < 20) return null;
   const [body, supplied, extra] = token.split(".");

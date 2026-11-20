@@ -35,7 +35,7 @@ export function AppHeader({ role, name }: { role: Role; name: string }) {
             </Link>
           )}
           {role === "admin" && (
-            <Link href="/admin" className="hover:text-[#ff8833]">
+            <Link href="/admin/setup" className="hover:text-[#ff8833]">
               Institution setup
             </Link>
           )}
